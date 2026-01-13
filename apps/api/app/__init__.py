@@ -1,0 +1,1 @@
+"""StudyBudd API - FastAPI backend."""
