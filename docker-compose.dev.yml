@@ -1,0 +1,29 @@
+# Development overrides - use with: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+      target: builder  # Use builder stage for dev with hot reload
+    volumes:
+      - ./apps/web/src:/app/src
+      - ./apps/web/public:/app/public
+    environment:
+      - NODE_ENV=development
+    command: npm run dev
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    volumes:
+      - ./apps/api/app:/app/app
+      - ./apps/api/tests:/app/tests
+    environment:
+      - DEBUG=true
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  db:
+    ports:
+      - "5433:5432"  # Expose on 5433 to avoid conflict with local postgres
