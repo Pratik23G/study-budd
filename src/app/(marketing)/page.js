@@ -1,5 +1,5 @@
 import Image from "next/image";
-import HorizontalScroll from "./components/HorizontalScroll";
+import HorizontalScroll from "../components/HorizontalScroll";
 
 export default function Home() {
   const line1 = "1. Improve your learning skills and Study alongside effective A.I. study mate.";
