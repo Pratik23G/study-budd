@@ -1,36 +1,172 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# StudyBudd
+
+A full-stack study application with AI-powered features.
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| Frontend | Next.js 15, React 19, Tailwind CSS |
+| Backend | FastAPI, Pydantic, PydanticAI |
+| Database | PostgreSQL 16 + pgvector |
+| Package Managers | npm (frontend), UV (backend) |
+| Containerization | Docker, Docker Compose |
+
+## Project Structure
+
+```
+study-budd/
+├── apps/
+│   ├── web/                    # Next.js frontend
+│   │   ├── src/
+│   │   ├── public/
+│   │   ├── package.json
+│   │   └── Dockerfile
+│   │
+│   └── api/                    # FastAPI backend
+│       ├── app/
+│       │   ├── routers/
+│       │   ├── models/
+│       │   ├── schemas/
+│       │   ├── services/
+│       │   └── core/
+│       ├── alembic/
+│       ├── tests/
+│       ├── pyproject.toml
+│       └── Dockerfile
+│
+├── packages/                   # Shared code (optional)
+├── docker/
+│   └── postgres/
+│       └── init.sql
+│
+├── docker-compose.yml
+├── docker-compose.dev.yml
+├── Makefile
+└── README.md
+```
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Docker and Docker Compose
+- Node.js 20+ (for local frontend development)
+- Python 3.12+ and [UV](https://docs.astral.sh/uv/) (for local backend development)
+
+### Environment Setup
+
+Create a `.env` file in the root directory:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Application
+DEBUG=false
+
+# Security
+SECRET_KEY=your-secret-key-change-in-production
+
+# Database
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=studybudd
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/studybudd
+
+# API Configuration
+NEXT_PUBLIC_API_URL=http://localhost:8000
+
+# AI/LLM Configuration (for PydanticAI)
+# OPENAI_API_KEY=your-openai-api-key
+# ANTHROPIC_API_KEY=your-anthropic-api-key
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Running with Docker
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+**Start all services:**
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# Using the helper script
+./docker-run.sh
 
-## Learn More
+# Or using Make
+make up
 
-To learn more about Next.js, take a look at the following resources:
+# Or directly with docker compose
+docker compose up
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Development mode (with hot reload):**
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+make dev
+# or
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+```
 
-## Deploy on Vercel
+**Stop all services:**
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+make down
+# or
+docker compose down
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Running Locally (without Docker)
+
+**Frontend:**
+
+```bash
+cd apps/web
+npm install
+npm run dev
+```
+
+**Backend:**
+
+```bash
+cd apps/api
+uv sync
+uv run uvicorn app.main:app --reload
+```
+
+**Database:**
+
+```bash
+# Start only the database with Docker
+make db-up
+```
+
+## Available Commands
+
+Run `make help` to see all available commands:
+
+| Command | Description |
+|---------|-------------|
+| `make dev` | Start all services in development mode |
+| `make build` | Build all Docker images |
+| `make up` | Start all services (production, detached) |
+| `make down` | Stop all services |
+| `make logs` | Follow logs from all services |
+| `make clean` | Stop services and remove volumes |
+| `make web-dev` | Run frontend locally |
+| `make api-dev` | Run API locally |
+| `make db-migrate` | Run database migrations |
+| `make install` | Install all dependencies |
+
+## API Documentation
+
+Once the API is running, access the documentation at:
+
+- **Swagger UI:** http://localhost:8000/docs
+- **ReDoc:** http://localhost:8000/redoc
+
+## Services
+
+| Service | URL | Description |
+|---------|-----|-------------|
+| Frontend | http://localhost:3000 | Next.js web application |
+| API | http://localhost:8000 | FastAPI backend |
+| Database | localhost:5433 | PostgreSQL with pgvector |
+
+## License
+
+MIT
