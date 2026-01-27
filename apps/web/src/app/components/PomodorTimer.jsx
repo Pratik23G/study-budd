@@ -1,176 +1,33 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-
-function pad2(n) {
-  return String(n).padStart(2, "0");
-}
-
-function totalSecondsForMode(mode, studyM, shortM, longM) {
-  if (mode === "focus") return studyM * 60;
-  if (mode === "shortBreak") return shortM * 60;
-  return longM * 60;
-}
+import { usePomodoro } from "./PomodoroProvider";
 
 export default function PomodoroTimer() {
-  // User settings
-  const [studyMinutes, setStudyMinutes] = useState(25);
-  const [shortBreakMinutes, setShortBreakMinutes] = useState(5);
-  const [longBreakMinutes, setLongBreakMinutes] = useState(15);
-  const [longBreakEvery, setLongBreakEvery] = useState(4);
+  const {
+    studyMinutes,
+    shortBreakMinutes,
+    longBreakMinutes,
+    longBreakEvery,
+    mode,
+    modeLabel,
+    isRunning,
+    cycleCount,
+    mm,
+    ss,
+    ringPercent,
 
-  // Timer state
-  const [mode, setMode] = useState("focus"); // "focus" | "shortBreak" | "longBreak"
-  const [isRunning, setIsRunning] = useState(false);
-  const [cycleCount, setCycleCount] = useState(0); // counts completed focus sessions
+    setStudyMinutes,
+    setShortBreakMinutes,
+    setLongBreakMinutes,
+    setLongBreakEvery,
 
-  const initialSeconds = useMemo(
-    () => totalSecondsForMode(mode, studyMinutes, shortBreakMinutes, longBreakMinutes),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [mode]
-  );
-
-  const [secondsLeft, setSecondsLeft] = useState(initialSeconds);
-
-  // Prevent "Pause" from acting like "Reset"
-  const totalForModeRef = useRef(initialSeconds);
-
-  // When user changes durations, update secondsLeft ONLY if:
-  // - timer is not running, AND
-  // - user hasn't started this session (still at full time)
-  useEffect(() => {
-    const newTotal = totalSecondsForMode(
-      mode,
-      studyMinutes,
-      shortBreakMinutes,
-      longBreakMinutes
-    );
-
-    if (!isRunning) {
-      const oldTotal = totalForModeRef.current || newTotal;
-      const userHasStartedThisSession = secondsLeft !== oldTotal;
-
-      if (!userHasStartedThisSession) {
-        setSecondsLeft(newTotal);
-      }
-    }
-
-    totalForModeRef.current = newTotal;
-  }, [mode, studyMinutes, shortBreakMinutes, longBreakMinutes, isRunning, secondsLeft]);
-
-  // Tick
-  useEffect(() => {
-    if (!isRunning) return;
-
-    const id = setInterval(() => {
-      setSecondsLeft((prev) => Math.max(0, prev - 1));
-    }, 1000);
-
-    return () => clearInterval(id);
-  }, [isRunning]);
-
-  // Auto-advance when time hits 0
-  useEffect(() => {
-    if (secondsLeft !== 0) return;
-
-    // If time ended while running, stop briefly (avoid double triggers)
-    // then move to next stage.
-    if (isRunning) setIsRunning(false);
-
-    if (mode === "focus") {
-      const nextCycle = cycleCount + 1;
-      setCycleCount(nextCycle);
-
-      const isLong = nextCycle % longBreakEvery === 0;
-      const nextMode = isLong ? "longBreak" : "shortBreak";
-      setMode(nextMode);
-
-      const nextSeconds = totalSecondsForMode(
-        nextMode,
-        studyMinutes,
-        shortBreakMinutes,
-        longBreakMinutes
-      );
-      totalForModeRef.current = nextSeconds;
-      setSecondsLeft(nextSeconds);
-    } else {
-      // break finished -> go back to focus
-      setMode("focus");
-      const nextSeconds = totalSecondsForMode(
-        "focus",
-        studyMinutes,
-        shortBreakMinutes,
-        longBreakMinutes
-      );
-      totalForModeRef.current = nextSeconds;
-      setSecondsLeft(nextSeconds);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [secondsLeft]);
-
-  const mm = Math.floor(secondsLeft / 60);
-  const ss = secondsLeft % 60;
-
-  const modeLabel =
-    mode === "focus"
-      ? "Focus"
-      : mode === "shortBreak"
-      ? "Short Break"
-      : "Long Break";
-
-  const ringPercent = useMemo(() => {
-    const total = totalSecondsForMode(mode, studyMinutes, shortBreakMinutes, longBreakMinutes);
-    if (!total) return 0;
-    return Math.round(((total - secondsLeft) / total) * 100);
-  }, [mode, secondsLeft, studyMinutes, shortBreakMinutes, longBreakMinutes]);
-
-  function start() {
-    if (secondsLeft === 0) {
-      // If ended, reset to full before starting
-      const fresh = totalSecondsForMode(
-        mode,
-        studyMinutes,
-        shortBreakMinutes,
-        longBreakMinutes
-      );
-      totalForModeRef.current = fresh;
-      setSecondsLeft(fresh);
-    }
-    setIsRunning(true);
-  }
-
-  function pause() {
-    setIsRunning(false); // should freeze time (no reset)
-  }
-
-  function resetTimer() {
-    setIsRunning(false);
-    const fresh = totalSecondsForMode(mode, studyMinutes, shortBreakMinutes, longBreakMinutes);
-    totalForModeRef.current = fresh;
-    setSecondsLeft(fresh);
-  }
-
-  function resetAll() {
-    setIsRunning(false);
-    setCycleCount(0);
-    setMode("focus");
-    const fresh = totalSecondsForMode("focus", studyMinutes, shortBreakMinutes, longBreakMinutes);
-    totalForModeRef.current = fresh;
-    setSecondsLeft(fresh);
-  }
-
-  function switchMode(nextMode) {
-    setIsRunning(false);
-    setMode(nextMode);
-    const fresh = totalSecondsForMode(
-      nextMode,
-      studyMinutes,
-      shortBreakMinutes,
-      longBreakMinutes
-    );
-    totalForModeRef.current = fresh;
-    setSecondsLeft(fresh);
-  }
+    start,
+    pause,
+    resetTimer,
+    resetAll,
+    switchMode,
+    pad2,
+  } = usePomodoro();
 
   return (
     <div className="w-full max-w-xl">
@@ -190,7 +47,6 @@ export default function PomodoroTimer() {
           </div>
         </div>
 
-        {/* Timer display */}
         <div className="mt-6 flex items-center justify-center">
           <div className="relative w-48 h-48 rounded-full border-8 border-slate-200 flex items-center justify-center">
             <div className="absolute inset-0 rounded-full border-8 border-indigo-500 opacity-30" />
@@ -205,7 +61,6 @@ export default function PomodoroTimer() {
           </div>
         </div>
 
-        {/* Controls */}
         <div className="mt-6 flex flex-wrap gap-3 justify-center">
           {!isRunning ? (
             <button
@@ -242,7 +97,6 @@ export default function PomodoroTimer() {
           </button>
         </div>
 
-        {/* Quick mode switches */}
         <div className="mt-5 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => switchMode("focus")}
@@ -276,41 +130,11 @@ export default function PomodoroTimer() {
           </button>
         </div>
 
-        {/* Settings */}
         <div className="mt-7 grid grid-cols-2 gap-4">
-          <Setting
-            label="Study (min)"
-            value={studyMinutes}
-            min={1}
-            max={180}
-            onChange={setStudyMinutes}
-            disabled={isRunning}
-          />
-          <Setting
-            label="Short break (min)"
-            value={shortBreakMinutes}
-            min={1}
-            max={60}
-            onChange={setShortBreakMinutes}
-            disabled={isRunning}
-          />
-          <Setting
-            label="Long break (min)"
-            value={longBreakMinutes}
-            min={1}
-            max={90}
-            onChange={setLongBreakMinutes}
-            disabled={isRunning}
-          />
-          <Setting
-            label="Long break every"
-            value={longBreakEvery}
-            min={2}
-            max={10}
-            onChange={setLongBreakEvery}
-            disabled={isRunning}
-            suffix="sessions"
-          />
+          <Setting label="Study (min)" value={studyMinutes} min={1} max={180} onChange={setStudyMinutes} disabled={isRunning} />
+          <Setting label="Short break (min)" value={shortBreakMinutes} min={1} max={60} onChange={setShortBreakMinutes} disabled={isRunning} />
+          <Setting label="Long break (min)" value={longBreakMinutes} min={1} max={90} onChange={setLongBreakMinutes} disabled={isRunning} />
+          <Setting label="Long break every" value={longBreakEvery} min={2} max={10} onChange={setLongBreakEvery} disabled={isRunning} suffix="sessions" />
         </div>
 
         <p className="mt-4 text-xs text-slate-500">
