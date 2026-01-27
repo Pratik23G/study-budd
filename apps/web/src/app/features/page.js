@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import PomodoroTimer from "../../components/PomodorTimer"; 
+import PomodoroTimer from "../components/PomodorTimer"; 
 export default function FeaturesPage() {
   const [activeTab, setActiveTab] = useState("search");
 
