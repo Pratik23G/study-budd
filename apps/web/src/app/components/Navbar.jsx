@@ -1,83 +1,127 @@
-// src/app/components/Navbar.jsx
 "use client";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import React, { useState } from "react";
-import BackButton from "../components/BackButton";
 
-const navItems = [
-  { href: "/features", label: "Features" },
-  { href: "/pricing",  label: "Pricing"  },
-  { href: "/quizzes",  label: "Quizzes"  },
-];
+import Image from "next/image";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { createSupabaseBrowser } from "../../lib/supabase/client";
 
 export default function Navbar() {
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
-  const showBack = pathname !== "/";
+  const router = useRouter();
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowser();
+
+    async function load() {
+      const { data } = await supabase.auth.getUser();
+      setUser(data?.user ?? null);
+      setLoading(false);
+    }
+
+    load();
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => sub?.subscription?.unsubscribe();
+  }, []);
+
+  async function signOut() {
+    const supabase = createSupabaseBrowser();
+    await supabase.auth.signOut();
+    router.push("/");
+  }
+
+  const navLink = (href, label) => {
+    const active = pathname === href;
+    return (
+      <Link
+        href={href}
+        className={`nav-pill ${active ? "nav-pill--active" : ""}`}
+      >
+        {label}
+      </Link>
+    );
+  };
 
   return (
-    <nav className="relative bg-gray-800 border-b-[10px] border-indigo-500">
-      {/* Back button pinned to top-left of the navbar */}
-      {pathname != "/" && (
-        <div className="absolute left-3 top-3 z-50">
-          <BackButton fallback="/" />
-        </div>
-      )}
+    <header className="sticky top-0 z-50 liquid-header">
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 pt-3">
+        {/* Liquid container */}
+        <div className="liquid-nav rounded-2xl border border-white/10">
+          <div className="relative flex items-center justify-between px-4 py-3">
+            {/* Logo -> Home (S.svg) */}
+            <Link href="/" className="flex items-center gap-3">
+              <div className="h-10 w-10 grid place-items-center">
+                <Image
+                  src="/S.svg"
+                  alt="StudyBudd"
+                  width={40}
+                  height={40}
+                  priority
+                  className="h-10 w-10 object-contain"
+                />
+              </div>
 
-      <div className="mx-auto max-w-7xl h-14 px-4 flex items-center justify-between">
-        {/* push brand a bit so it doesn't overlap the back button */}
-        <span className="pl-8 font-bold text-4xl text-indigo-400/80 relative z-10">
-          StudyBudd
-        </span>
-
-        {/* Desktop links with your water effect classes */}
-        <div className="hidden md:flex items-center gap-2">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-current={pathname === item.href ? "page" : undefined}
-              className={
-                // your custom effect + safe positioning
-                "btn btn-liquid btn-lg relative z-10 " +
-                (pathname === item.href ? "text-white" : "text-indigo-100")
-              }
-            >
-              {item.label}
+              <div className="leading-tight">
+                <div className="text-white font-extrabold tracking-tight">
+                  StudyBudd
+                </div>
+                <div className="text-xs text-white/70 -mt-0.5">
+                  AI Study Companion
+                </div>
+              </div>
             </Link>
-          ))}
-        </div>
 
-        {/* Mobile: hamburger */}
-        <button
-          onClick={() => setOpen((o) => !o)}
-          aria-label="Toggle menu"
-          aria-expanded={open}
-          className="md:hidden w-10 h-10 grid place-content-center relative z-10"
-        >
-          <span className={`block h-0.5 w-6 rounded-sm bg-slate-300 transition-transform duration-300 ${open ? "translate-y-1.5 rotate-45" : "-translate-y-1.5"}`} />
-          <span className={`block h-0.5 w-6 rounded-sm bg-slate-300 my-1 transition-opacity duration-300 ${open ? "opacity-0" : "opacity-100"}`} />
-          <span className={`block h-0.5 w-6 rounded-sm bg-slate-300 transition-transform duration-300 ${open ? "-translate-y-1.5 -rotate-45" : "translate-y-1.5"}`} />
-        </button>
-      </div>
+            {/* Links */}
+            <nav className="hidden md:flex items-center gap-2">
+              {navLink("/features", "Features")}
+              {navLink("/pricing", "Pricing")}
+              {navLink("/quizzes", "Quizzes")}
+            </nav>
 
-      {/* Mobile dropdown */}
-      <div className={`md:hidden border-t border-slate-700 ${open ? "block" : "hidden"}`}>
-        <div className="px-4 py-3 space-y-2">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setOpen(false)}
-              aria-current={pathname === item.href ? "page" : undefined}
-              className="btn btn-liquid w-full relative z-10"
-            >
-              {item.label}
-            </Link>
-          ))}
+            {/* Auth buttons */}
+            <div className="flex items-center gap-2">
+              {loading ? (
+                <div className="text-white/70 text-sm px-3">...</div>
+              ) : user ? (
+                <>
+                  <Link
+                    href="/account"
+                    className="nav-pill nav-pill--ghost"
+                    title={user.email ?? "Account"}
+                  >
+                    {user.email?.split("@")[0] ?? "Account"}
+                  </Link>
+                  <button onClick={signOut} className="nav-btn nav-btn--light">
+                    Sign out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link href="/login" className="nav-pill nav-pill--ghost">
+                    Log in
+                  </Link>
+                  <Link href="/signup" className="nav-btn nav-btn--light">
+                    Sign up
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Mobile nav */}
+          <div className="md:hidden flex items-center gap-2 px-4 pb-3">
+            {navLink("/features", "Features")}
+            {navLink("/pricing", "Pricing")}
+            {navLink("/quizzes", "Quizzes")}
+          </div>
         </div>
       </div>
-    </nav>
+    </header>
   );
 }
