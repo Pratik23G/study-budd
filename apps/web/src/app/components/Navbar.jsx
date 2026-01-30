@@ -82,6 +82,7 @@ export default function Navbar() {
               {navLink("/features", "Features")}
               {navLink("/pricing", "Pricing")}
               {navLink("/quizzes", "Quizzes")}
+              {user && navLink("/documents", "Documents")}
             </nav>
 
             {/* Auth buttons */}
@@ -119,6 +120,7 @@ export default function Navbar() {
             {navLink("/features", "Features")}
             {navLink("/pricing", "Pricing")}
             {navLink("/quizzes", "Quizzes")}
+            {user && navLink("/documents", "Documents")}
           </div>
         </div>
       </div>

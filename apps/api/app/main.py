@@ -3,6 +3,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.documents.router import router as documents_router
+
 app = FastAPI(
     title="StudyBudd API",
     description="Backend API for StudyBudd application",
@@ -17,6 +19,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include routers
+app.include_router(documents_router, prefix="/api")
 
 
 @app.get("/health")
