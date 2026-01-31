@@ -48,16 +48,11 @@ body {
 
 @layer components {
   .btn-style501 {
-    /* gradient background */
     background-image: linear-gradient(to right, #a1c4fd 0%, #c2e9fb 51%, #a1c4fd 100%);
     background-size: 200% auto;
     background-position: left top;
-
-    /* visuals */
     border-color: transparent;
     color: #464646;
-
-    /* smooth hover */
     transition: background-position .35s, color .35s;
   }
   .btn-style501:hover {
@@ -65,29 +60,18 @@ body {
     color: #000;
   }
 
-  .btn--lg {
-    padding: 0.875rem 1.5rem;
-    font-size: 1.125rem;
-    border-radius: 1rem;
-  }
+  .btn--lg { padding: 0.875rem 1.5rem; font-size: 1.125rem; border-radius: 1rem; }
+  .btn--xl { padding: 1rem 1.75rem; font-size: 1.25rem; border-radius: 1.25rem; }
 
-  .btn--xl {
-    padding: 1rem 1.75rem;
-    font-size: 1.25rem;
-    border-radius: 1.25rem;
-  }
-
-  /* Base button */
   .btn {
     @apply relative inline-flex items-center justify-center font-semibold rounded-lg border-2 overflow-hidden transition-all duration-300 cursor-pointer;
-    padding: 0.75rem 1.25rem; /* default size */
+    padding: 0.75rem 1.25rem;
     font-size: 0.95rem;
     border-color: #646cff;
     color: #fff;
     background: none;
   }
 
-  /* Your liquid effect */
   .btn-liquid {
     background: linear-gradient(#646cff 0 0) no-repeat calc(200% - var(--p, 0%))
       100% / 200% var(--p, 0.2em);
@@ -100,41 +84,26 @@ body {
     color: #fff;
   }
 
-  /* Optional: show “active page” as filled */
-  .btn[aria-current="page"] {
-    --p: 100%;
-    color: #fff;
-  }
+  .btn[aria-current="page"] { --p: 100%; color: #fff; }
 
-  /* Easy size modifiers */
   .btn-lg { padding: 0.9rem 1.6rem; font-size: 1.05rem; }
   .btn-xl { padding: 1.1rem 1.9rem; font-size: 1.15rem; }
-
-  /* Make the liquid “bar” thicker at rest (try 0.35em) */
   .btn-thick { --p: 0.35em; }
-
-  /* New component for my footer page flexing all the links to the right */
 
   .svg-buttons-container {
     display: flex;
     flex-direction: row;
     justify-content: center;
     align-items: center;
-    column-gap: 0.75rem; /* gap-3 */
-    row-gap: 0;
+    column-gap: 0.75rem;
     flex-wrap: nowrap;
   }
 
-  /* Add this to your globals.css file */
   .scrollbar-hide {
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* Internet Explorer 10+ */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
   }
-
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none; /* WebKit */
-  }
-  
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
 
   .dropzone {
     border: 2px dashed #cccccc;
@@ -144,11 +113,8 @@ body {
     cursor: pointer;
     transition: border-color 0.3s;
   }
-  
-  .dropzone:hover {
-    border-color: #000000;
-  }
-  
+  .dropzone:hover { border-color: #000000; }
+
   .container {
     padding: 20px;
     max-width: 600px;
@@ -156,56 +122,73 @@ body {
   }
 }
 
+/* =========================
+   Liquid Navbar (FIXED)
+   ========================= */
 
-/* --- Liquid Navbar --- */
+/* IMPORTANT:
+   - overflow must be visible so dropdowns can show
+   - BUT we must prevent blob layers from "washing" the page
+   - So we isolate layers and keep blobs behind content.
+*/
 .liquid-nav {
   position: relative;
-  overflow: hidden;
-  background: rgba(2, 6, 23, 0.42); /* slate-950-ish */
+  overflow: visible;          /* ✅ dropdowns can escape */
+  isolation: isolate;         /* ✅ creates a safe stacking context */
+  border-radius: 1rem;        /* matches rounded-2xl feel */
+  background: rgba(2, 6, 23, 0.42);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   box-shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.65);
 }
 
-/* floating blobs */
+/* blob layers - keep BEHIND content */
 .liquid-nav::before,
 .liquid-nav::after {
   content: "";
   position: absolute;
   inset: -60px;
+  z-index: -1;               /* ✅ behind the navbar content */
   background:
-    radial-gradient(circle at 20% 30%, rgba(99,102,241,0.55), transparent 45%),
-    radial-gradient(circle at 70% 20%, rgba(59,130,246,0.50), transparent 48%),
-    radial-gradient(circle at 60% 80%, rgba(168,85,247,0.45), transparent 52%);
-  filter: blur(18px);
-  opacity: 0.9;
+    radial-gradient(circle at 20% 30%, rgba(99,102,241,0.40), transparent 45%),
+    radial-gradient(circle at 70% 20%, rgba(59,130,246,0.35), transparent 48%),
+    radial-gradient(circle at 60% 80%, rgba(168,85,247,0.30), transparent 52%);
+  filter: blur(26px);        /* slightly higher blur = softer */
+  opacity: 0.75;             /* reduced so it doesn’t tint the page */
   transform: translate3d(0, 0, 0);
   animation: liquidFloat 10s ease-in-out infinite;
   pointer-events: none;
 }
 
 .liquid-nav::after {
-  opacity: 0.7;
-  filter: blur(26px);
+  opacity: 0.55;
+  filter: blur(34px);
   animation-duration: 14s;
   animation-direction: reverse;
 }
 
-/* subtle shimmer */
+/* shimmer layer (also behind content) */
 .liquid-nav > .relative::before {
   content: "";
   position: absolute;
   inset: 0;
+  z-index: 0;
   background: linear-gradient(
     120deg,
     transparent 0%,
-    rgba(255, 255, 255, 0.06) 20%,
+    rgba(255, 255, 255, 0.05) 20%,
     transparent 40%,
     transparent 100%
   );
   transform: translateX(-60%);
   animation: liquidShine 4.5s ease-in-out infinite;
   pointer-events: none;
+}
+
+/* keep actual navbar content ABOVE shimmer */
+.liquid-nav > .relative {
+  position: relative;
+  z-index: 1;
 }
 
 /* buttons / pills */
@@ -238,12 +221,21 @@ body {
   font-weight: 800;
   transition: transform 160ms ease, filter 160ms ease;
 }
-.nav-btn:hover {
-  transform: translateY(-1px);
-}
+.nav-btn:hover { transform: translateY(-1px); }
 .nav-btn--light {
   background: white;
   color: #0f172a;
+}
+
+/* Dropdown panel (use with your menu) */
+.menu-panel {
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(2, 6, 23, 0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 20px 50px -25px rgba(0, 0, 0, 0.8);
+  overflow: hidden;
 }
 
 /* animations */
@@ -260,35 +252,209 @@ body {
   100% { transform: translateX(80%); opacity: 0.0; }
 }
 
+/* =========================
+   Liquid Header (FIXED)
+   ========================= */
 
-/* === Full-width liquid header background === */
 .liquid-header {
   position: relative;
-  background: rgba(2, 6, 23, 0.65); /* replaces black */
+  overflow: hidden;          /* ✅ keep header blobs contained */
+  background: rgba(2, 6, 23, 0.65);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  overflow: hidden;
 }
 
-/* liquid blobs across full header */
+/* header blobs - toned down */
 .liquid-header::before,
 .liquid-header::after {
   content: "";
   position: absolute;
   inset: -80px;
   background:
-    radial-gradient(circle at 15% 40%, rgba(99,102,241,0.55), transparent 45%),
-    radial-gradient(circle at 60% 30%, rgba(59,130,246,0.50), transparent 48%),
-    radial-gradient(circle at 85% 70%, rgba(168,85,247,0.45), transparent 50%);
-  filter: blur(28px);
-  opacity: 0.85;
+    radial-gradient(circle at 15% 40%, rgba(99,102,241,0.30), transparent 45%),
+    radial-gradient(circle at 60% 30%, rgba(59,130,246,0.25), transparent 48%),
+    radial-gradient(circle at 85% 70%, rgba(168,85,247,0.22), transparent 50%);
+  filter: blur(32px);
+  opacity: 0.65;
   animation: liquidFloat 14s ease-in-out infinite;
   pointer-events: none;
 }
 
 .liquid-header::after {
-  opacity: 0.6;
+  opacity: 0.45;
   animation-duration: 18s;
   animation-direction: reverse;
+}
+
+
+/* ===== NAVBAR HARD FIXES (put at bottom of globals.css) ===== */
+
+/* 1) Never clip dropdowns */
+.liquid-header {
+  overflow: visible !important;
+  position: sticky; /* keeps sticky behavior stable */
+  top: 0;
+  z-index: 9999; /* ensure header is on top */
+  isolation: isolate; /* makes z-index predictable */
+}
+
+.liquid-nav {
+  overflow: visible !important;
+  position: relative;
+  isolation: isolate; /* keeps blobs behind */
+}
+
+/* 2) Force your liquid blobs BEHIND the content */
+.liquid-header::before,
+.liquid-header::after,
+.liquid-nav::before,
+.liquid-nav::after,
+.liquid-nav > .relative::before {
+  z-index: -1 !important;
+}
+
+/* 3) Ensure navbar content is above blobs */
+.liquid-nav > .relative,
+.liquid-nav .relative {
+  position: relative;
+  z-index: 2;
+}
+
+/* 4) Dropdown panel styling + visibility */
+.menu-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: 16rem;
+
+  background: rgba(2, 6, 23, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+
+  border-radius: 1rem;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+  z-index: 99999 !important;
+  overflow: hidden;
+}
+
+
+/* ===== Account trigger button (matches liquid theme) ===== */
+.account-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 10px 14px;
+  border-radius: 999px;
+
+  color: rgba(255, 255, 255, 0.92);
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+
+  box-shadow:
+    0 10px 28px rgba(0,0,0,0.25),
+    inset 0 1px 0 rgba(255,255,255,0.10);
+
+  transition: transform 160ms ease, background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.account-trigger:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow:
+    0 14px 36px rgba(0,0,0,0.32),
+    inset 0 1px 0 rgba(255,255,255,0.12);
+}
+
+.account-trigger:active {
+  transform: translateY(0px);
+}
+
+.account-trigger--open {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.26);
+}
+
+.account-trigger__avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+
+  background:
+    radial-gradient(circle at 30% 30%, rgba(99,102,241,0.85), rgba(59,130,246,0.55));
+  border: 1px solid rgba(255,255,255,0.18);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+
+  font-size: 0.85rem;
+}
+
+.account-trigger__name {
+  max-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-trigger__icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.10);
+}
+
+/* ===== Dropdown menu items (better feel) ===== */
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+
+  color: rgba(255,255,255,0.92);
+  font-size: 0.95rem;
+  font-weight: 650;
+  text-decoration: none;
+
+  background: transparent;
+  transition: background 140ms ease, transform 140ms ease;
+}
+
+.menu-item:hover {
+  background: rgba(255,255,255,0.10);
+  transform: translateX(2px);
+}
+
+.menu-item--danger {
+  color: rgba(255, 180, 180, 0.95);
+}
+
+.menu-item--danger:hover {
+  background: rgba(239, 68, 68, 0.16);
+}
+
+
+.menu-panel {
+  background: rgba(2, 6, 23, 0.72);
+  border: 1px solid rgba(255,255,255,0.12);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 16px;
+  overflow: hidden;
 }
 
