@@ -1,7 +1,23 @@
 import Image from "next/image";
-import HorizontalScroll from "./components/HorizontalScroll";
+import Link from "next/link";
+import { redirect } from "next/navigation";
 
-export default function Home() {
+import HorizontalScroll from "./components/HorizontalScroll";
+import { createSupabaseServer } from "../lib/supabase/server";
+
+export default async function Home() {
+  // ✅ Server-side auth check (no flicker)
+  const supabase = createSupabaseServer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // ✅ If logged in, skip marketing and go to dashboard
+  if (user) {
+    redirect("/dashboard");
+  }
+
+  // Marketing content (logged out only)
   const line1 =
     "1. Improve your learning skills and Study alongside effective A.I. study mate.";
   const line2 =
@@ -34,6 +50,14 @@ export default function Home() {
     },
   ];
 
+  // Helper for typing animation
+  const typingStyle = (text, delay = "0s") => ({
+    "--nch": `${text.length}ch`,
+    "--steps": text.length,
+    "--dur": "3.2s",
+    "--delay": delay,
+  });
+
   return (
     <div className="font-sans min-h-screen bg-gradient-to-b from-white to-slate-100 text-slate-900 px-4 py-8 sm:px-6 md:px-8 lg:px-12 xl:px-20">
       <main className="flex flex-col items-center max-w-7xl mx-auto">
@@ -54,12 +78,7 @@ export default function Home() {
           <div className="w-full flex justify-center px-2">
             <h1
               className="animate-typing overflow-hidden whitespace-normal sm:whitespace-nowrap border-r-2 sm:border-r-4 border-r-black pr-1 sm:pr-2 text-sm sm:text-base md:text-lg lg:text-[19px] font-medium leading-relaxed"
-              style={{
-                ["--nch"]: `${line1.length}ch`,
-                ["--steps"]: line1.length,
-                ["--dur"]: "3.2s",
-                ["--delay"]: "0s",
-              }}
+              style={typingStyle(line1, "0s")}
             >
               {line1}
             </h1>
@@ -69,22 +88,28 @@ export default function Home() {
           <div className="w-full flex justify-center px-2">
             <h2
               className="animate-typing overflow-hidden whitespace-normal sm:whitespace-nowrap border-r-2 sm:border-r-4 border-r-black pr-1 sm:pr-2 text-sm sm:text-base md:text-lg lg:text-[20px] font-medium leading-relaxed"
-              style={{
-                ["--nch"]: `${line2.length}ch`,
-                ["--steps"]: line2.length,
-                ["--dur"]: "3.2s",
-                ["--delay"]: "0.4s",
-              }}
+              style={typingStyle(line2, "0.4s")}
             >
               {line2}
             </h2>
           </div>
 
-          {/* Button */}
-          <div className="flex justify-center pt-4 sm:pt-6 md:pt-8">
-            <button className="click-btn btn-style501 px-4 py-2 sm:px-6 sm:py-3 md:px-8 md:py-4 text-sm sm:text-base md:text-lg">
+          {/* Buttons */}
+          <div className="flex justify-center gap-3 pt-4 sm:pt-6 md:pt-8">
+            <Link
+              href="/signup"
+              className="click-btn btn-style501 px-4 py-2 sm:px-6 sm:py-3 md:px-8 md:py-4 text-sm sm:text-base md:text-lg inline-flex items-center justify-center"
+            >
               <span className="relative z-10">ENROLL NOW!!</span>
-            </button>
+            </Link>
+
+            {/* ✅ For logged-out users, dashboard should route them to login anyway */}
+            <Link
+              href="/dashboard"
+              className="click-btn btn-style501 px-4 py-2 sm:px-6 sm:py-3 md:px-8 md:py-4 text-sm sm:text-base md:text-lg inline-flex items-center justify-center"
+            >
+              Go to Dashboard
+            </Link>
           </div>
 
           {/* Carousel */}
