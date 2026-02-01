@@ -64,7 +64,7 @@ def get_current_user(credentials):
 In development mode, the frontend sends a placeholder token when no session exists:
 
 ```javascript
-// apps/web/src/app/components/DocumentUpload.jsx
+// apps/web/src/12app/components/DocumentUpload.jsx
 const isDev = process.env.NODE_ENV === "development";
 const devToken = process.env.NEXT_PUBLIC_DEV_ACCESS_TOKEN || "dev-token";
 const accessToken = session?.access_token || (isDev ? devToken : null);
