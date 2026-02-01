@@ -7,7 +7,7 @@ import { createSupabaseServer } from "../lib/supabase/server";
 
 export default async function Home() {
   // ✅ Server-side auth check (no flicker)
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
   const {
     data: { user },
   } = await supabase.auth.getUser();

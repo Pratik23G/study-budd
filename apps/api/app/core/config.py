@@ -3,7 +3,7 @@
 from functools import lru_cache
 from urllib.parse import quote_plus
 
-from pydantic import computed_field
+from pydantic import Field, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -23,7 +23,8 @@ class Settings(BaseSettings):
     # Development - set DEV_USER_ID to bypass auth in debug mode
     dev_user_id: str | None = None
 
-    # Database - use separate fields to avoid URL encoding issues
+    # Database - prefer DATABASE_URL if set, otherwise build from components
+    database_url_raw: str | None = Field(default=None, validation_alias="DATABASE_URL")
     db_host: str = "localhost"
     db_port: int = 5432
     db_user: str = "postgres"
@@ -33,7 +34,16 @@ class Settings(BaseSettings):
     @computed_field
     @property
     def database_url(self) -> str:
-        """Build database URL with properly encoded password."""
+        """Get database URL - prefer DATABASE_URL env var, else build from components."""
+        if self.database_url_raw:
+            url = self.database_url_raw
+            # Convert postgresql:// to postgresql+asyncpg:// for async support
+            if url.startswith("postgresql://"):
+                url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+            elif url.startswith("postgres://"):
+                url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+            return url
+        # Fall back to building from components
         encoded_password = quote_plus(self.db_password)
         return f"postgresql+asyncpg://{self.db_user}:{encoded_password}@{self.db_host}:{self.db_port}/{self.db_name}"
 
