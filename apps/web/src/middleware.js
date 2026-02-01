@@ -28,7 +28,7 @@ export async function middleware(request) {
   const { pathname } = request.nextUrl;
 
   // Protected routes - redirect to login if not authenticated
-  const protectedRoutes = ["/dashboard", "/account", "/documents"];
+  const protectedRoutes = ["/dashboard", "/account"];
   const isProtectedRoute = protectedRoutes.some((route) =>
     pathname.startsWith(route)
   );
@@ -54,7 +54,6 @@ export const config = {
   matcher: [
     "/dashboard/:path*",
     "/account/:path*",
-    "/documents/:path*",
     "/login",
     "/signup",
   ],

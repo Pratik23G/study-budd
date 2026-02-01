@@ -105,15 +105,15 @@ export default function DocumentUpload({ onUploadSuccess }) {
     });
 
   const getBorderColor = () => {
-    if (isDragReject) return "border-red-500";
+    if (isDragReject) return "border-red-400";
     if (isDragActive) return "border-indigo-500";
-    return "border-gray-600";
+    return "border-slate-200";
   };
 
   const getBackgroundColor = () => {
-    if (isDragReject) return "bg-red-500/10";
-    if (isDragActive) return "bg-indigo-500/10";
-    return "bg-slate-800/50";
+    if (isDragReject) return "bg-red-50";
+    if (isDragActive) return "bg-indigo-50";
+    return "bg-slate-50";
   };
 
   return (
@@ -126,7 +126,7 @@ export default function DocumentUpload({ onUploadSuccess }) {
           transition-all duration-200 cursor-pointer
           ${getBorderColor()}
           ${getBackgroundColor()}
-          ${uploading ? "opacity-70 cursor-not-allowed" : "hover:border-indigo-400 hover:bg-slate-800/70"}
+          ${uploading ? "opacity-70 cursor-not-allowed" : "hover:border-indigo-400 hover:bg-indigo-50"}
         `}
       >
         <input {...getInputProps()} />
@@ -136,12 +136,12 @@ export default function DocumentUpload({ onUploadSuccess }) {
           <div
             className={`
             w-16 h-16 rounded-full flex items-center justify-center
-            ${isDragActive ? "bg-indigo-500/20" : "bg-slate-700/50"}
+            ${isDragActive ? "bg-indigo-100" : "bg-slate-100"}
             transition-colors duration-200
           `}
           >
             <svg
-              className={`w-8 h-8 ${isDragActive ? "text-indigo-400" : "text-gray-400"}`}
+              className={`w-8 h-8 ${isDragActive ? "text-indigo-600" : "text-slate-500"}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -157,41 +157,41 @@ export default function DocumentUpload({ onUploadSuccess }) {
 
           {uploading ? (
             <div className="space-y-2">
-              <p className="text-gray-300 font-medium">Uploading...</p>
-              <div className="w-48 h-2 bg-slate-700 rounded-full overflow-hidden">
+              <p className="text-slate-700 font-medium">Uploading...</p>
+              <div className="w-48 h-2 bg-slate-200 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-indigo-500 transition-all duration-300"
                   style={{ width: `${uploadProgress}%` }}
                 />
               </div>
-              <p className="text-sm text-gray-500">{uploadProgress}%</p>
+              <p className="text-sm text-slate-500">{uploadProgress}%</p>
             </div>
           ) : (
             <>
               <div>
-                <p className="text-gray-200 font-medium text-lg">
+                <p className="text-slate-800 font-medium text-lg">
                   {isDragActive
                     ? "Drop your files here"
                     : "Drag & drop your documents"}
                 </p>
-                <p className="text-gray-500 text-sm mt-1">
+                <p className="text-slate-500 text-sm mt-1">
                   or click to browse
                 </p>
               </div>
 
               <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
-                <span className="px-3 py-1 bg-slate-700/70 rounded-full text-xs text-gray-400 border border-slate-600">
+                <span className="px-3 py-1 bg-white rounded-full text-xs text-slate-600 border border-slate-200">
                   PDF
                 </span>
-                <span className="px-3 py-1 bg-slate-700/70 rounded-full text-xs text-gray-400 border border-slate-600">
+                <span className="px-3 py-1 bg-white rounded-full text-xs text-slate-600 border border-slate-200">
                   PNG
                 </span>
-                <span className="px-3 py-1 bg-slate-700/70 rounded-full text-xs text-gray-400 border border-slate-600">
+                <span className="px-3 py-1 bg-white rounded-full text-xs text-slate-600 border border-slate-200">
                   JPEG
                 </span>
               </div>
 
-              <p className="text-xs text-gray-600 mt-2">
+              <p className="text-xs text-slate-400 mt-2">
                 Maximum file size: 10MB
               </p>
             </>
@@ -201,10 +201,10 @@ export default function DocumentUpload({ onUploadSuccess }) {
 
       {/* Error message */}
       {error && (
-        <div className="mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
           <div className="flex items-center gap-2">
             <svg
-              className="w-5 h-5 text-red-400 flex-shrink-0"
+              className="w-5 h-5 text-red-500 flex-shrink-0"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -216,7 +216,7 @@ export default function DocumentUpload({ onUploadSuccess }) {
                 d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <p className="text-red-400 text-sm">{error}</p>
+            <p className="text-red-700 text-sm">{error}</p>
           </div>
         </div>
       )}

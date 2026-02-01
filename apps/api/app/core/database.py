@@ -8,10 +8,16 @@ from app.core.config import get_settings
 
 settings = get_settings()
 
+# Build connection args for SSL (required for Supabase)
+connect_args = {}
+if "supabase" in settings.database_url or "supabase" in settings.db_host:
+    connect_args["ssl"] = "require"
+
 engine = create_async_engine(
     settings.database_url,
     echo=settings.debug,
     pool_pre_ping=True,
+    connect_args=connect_args,
 )
 
 async_session_maker = async_sessionmaker(
