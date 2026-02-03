@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 # --- Imports for Feature Routers ---
 from app.documents.router import router as documents_router
-from app.chat.router import router as chat_router  # ✅ NEW: Import Chat Router
+from app.chat.router import router as chat_router
 
 # --- 1. Configuration & Setup ---
 
@@ -57,7 +57,6 @@ app.add_middleware(
 # Existing documents router
 app.include_router(documents_router, prefix="/api")
 
-# ✅ NEW: Register Chat Router
 # The router itself has prefix="/chat", so mounting it at "/api" results in "/api/chat"
 app.include_router(chat_router, prefix="/api") 
 
