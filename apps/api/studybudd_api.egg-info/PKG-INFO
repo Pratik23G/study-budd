@@ -1,0 +1,107 @@
+Metadata-Version: 2.4
+Name: studybudd-api
+Version: 0.1.0
+Summary: StudyBudd API - FastAPI backend with PydanticAI
+Requires-Python: >=3.12
+Description-Content-Type: text/markdown
+Requires-Dist: fastapi>=0.115.0
+Requires-Dist: uvicorn[standard]>=0.32.0
+Requires-Dist: pydantic>=2.10.0
+Requires-Dist: pydantic-settings>=2.6.0
+Requires-Dist: pydantic-ai>=0.0.20
+Requires-Dist: sqlalchemy>=2.0.0
+Requires-Dist: asyncpg>=0.30.0
+Requires-Dist: greenlet>=3.0.0
+Requires-Dist: pgvector>=0.3.0
+Requires-Dist: alembic>=1.14.0
+Requires-Dist: python-dotenv>=1.0.0
+Requires-Dist: httpx>=0.28.0
+Requires-Dist: supabase>=2.10.0
+Requires-Dist: python-multipart>=0.0.9
+Requires-Dist: PyJWT>=2.9.0
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0.0; extra == "dev"
+Requires-Dist: pytest-asyncio>=0.24.0; extra == "dev"
+Requires-Dist: pytest-cov>=6.0.0; extra == "dev"
+Requires-Dist: ruff>=0.8.0; extra == "dev"
+Requires-Dist: mypy>=1.13.0; extra == "dev"
+
+# StudyBudd API
+
+FastAPI backend for the StudyBudd application.
+
+## File Structure
+apps/api/app/
+├── main.py                      # Entry point
+├── core/                        # Shared infrastructure
+│   ├── config.py                # Settings
+│   ├── database.py              # DB engine & session
+│   ├── dependencies.py          # Auth (CurrentUser) + DB (DbSession)
+│   └── supabase.py              # Storage client & helpers
+│
+├── documents/                   # Document feature module
+│   ├── router.py                # /api/documents endpoints
+│   ├── schemas.py               # Request/response DTOs
+│   ├── models.py                # Document entity + Base
+│   └── service.py               # DocumentService class
+│
+├── processing/                  # RAG pipeline (stubs)
+│   ├── router.py
+│   ├── schemas.py
+│   ├── models.py
+│   └── service.py
+│
+├── chat/                        # Chat feature (stubs)
+│   ├── router.py
+│   ├── schemas.py
+│   ├── models.py
+│   └── service.py
+│
+└── inference/                   # LLM integration (stubs)
+    ├── client.py
+    └── prompts.py
+
+
+## Tech Stack
+
+- **Python 3.12**
+- **FastAPI** - Web framework
+- **Pydantic / PydanticAI** - Data validation and AI agents
+- **SQLAlchemy** - ORM
+- **PostgreSQL + pgvector** - Database with vector embeddings
+- **UV** - Package manager
+- **Alembic** - Database migrations
+
+## Development Setup
+
+### Prerequisites
+
+- Python 3.12+
+- [UV](https://docs.astral.sh/uv/) package manager
+- PostgreSQL with pgvector extension
+
+### Installation
+
+```bash
+# Install dependencies
+uv sync
+
+# Run development server
+uv run uvicorn app.main:app --reload
+```
+
+### Database Migrations
+
+```bash
+# Create a new migration
+uv run alembic revision --autogenerate -m "description"
+
+# Apply migrations
+uv run alembic upgrade head
+```
+
+## API Documentation
+
+Once running, access the API docs at:
+- Swagger UI: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc

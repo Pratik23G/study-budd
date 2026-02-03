@@ -116,7 +116,7 @@ export default function Navbar() {
               </div>
             </Link>
 
-            {/* Desktop nav */}
+            {/* Desktop nav (logged out only) */}
             {showTopLinks && (
               <nav className="hidden md:flex items-center gap-2">
                 {navLink("/features", "Features")}

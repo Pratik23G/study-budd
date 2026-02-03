@@ -33,10 +33,13 @@ export default function ChatPage() {
     return threads.filter((t) => t.title.toLowerCase().includes(q));
   }, [threads, search]);
 
-  const bottomRef = useRef(null);
+  const messagesContainerRef = useRef(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = messagesContainerRef.current;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
   }, [activeId, activeThread?.messages?.length]);
 
   // Close menu on outside click
@@ -220,7 +223,7 @@ export default function ChatPage() {
           <p className="text-sm text-slate-600 mt-1">Ask questions about your notes.</p>
         </div>
 
-        <div className="max-h-[60vh] overflow-auto p-4 space-y-3">
+        <div ref={messagesContainerRef} className="max-h-[60vh] overflow-auto p-4 space-y-3">
           {(activeThread?.messages || []).map((m, idx) => {
             const isUser = m.role === "user";
             return (
@@ -241,7 +244,6 @@ export default function ChatPage() {
               </div>
             );
           })}
-          <div ref={bottomRef} />
         </div>
 
         {/* Composer */}

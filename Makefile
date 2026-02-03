@@ -1,4 +1,4 @@
-.PHONY: help dev build up down logs clean web-dev api-dev db-migrate db-revision install
+.PHONY: help dev build up down stop logs clean web-dev api-dev db-migrate db-revision install
 
 # Colors
 CYAN := \033[36m
@@ -23,7 +23,10 @@ up: ## Start all services in production mode (detached)
 	docker compose up -d
 
 down: ## Stop all services
-	docker compose down
+	docker compose -f docker-compose.yml -f docker-compose.dev.yml down
+
+stop: ## Alias for down
+	docker compose -f docker-compose.yml -f docker-compose.dev.yml down
 
 logs: ## Follow logs from all services
 	docker compose logs -f

@@ -45,3 +45,8 @@ htmlcov/
 
 # Database
 postgres_data/
+
+# IDE
+.vscode/
+.idea/
+.cursor/

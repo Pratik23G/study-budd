@@ -7,14 +7,20 @@ from pydantic import BaseModel
 from supabase import create_client, Client
 from dotenv import load_dotenv
 
+from app.documents.router import router as documents_router
+
 # --- 1. Configuration & Setup ---
 
 # Load environment variables from the .env file
 load_dotenv()
 
-# Retrieve Supabase credentials
-SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+# Retrieve Supabase credentials (use service key for server-side operations)
+SUPABASE_URL = os.environ.get("SUPABASE_URL") or os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
+SUPABASE_KEY = (
+    os.environ.get("SUPABASE_SERVICE_KEY") or 
+    os.environ.get("SUPABASE_KEY") or 
+    os.environ.get("NEXT_PUBLIC_SUPABASE_ANON_KEY")
+)
 
 # Initialize Supabase Client
 supabase: Client = None
@@ -25,7 +31,7 @@ if SUPABASE_URL and SUPABASE_KEY:
     except Exception as e:
         print(f"Error initializing Supabase: {e}")
 else:
-    print("WARNING: Supabase credentials not found in .env file.")
+    print(f"WARNING: Supabase credentials not found. URL={bool(SUPABASE_URL)}, KEY={bool(SUPABASE_KEY)}")
 
 # Initialize FastAPI App (Keeping your original metadata)
 app = FastAPI(
@@ -45,6 +51,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include routers
+app.include_router(documents_router, prefix="/api")
 
 # --- 3. Data Models ---
 
