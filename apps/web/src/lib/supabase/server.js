@@ -19,10 +19,19 @@ export async function createSupabaseServer() {
         return cookieStore.get(name)?.value;
       },
       set(name, value, options) {
-        cookieStore.set({ name, value, ...options });
+        try {
+          cookieStore.set({ name, value, ...options });
+        } catch {
+          // Ignore - this is called from a Server Component where cookies
+          // cannot be modified. The middleware handles session refresh.
+        }
       },
       remove(name, options) {
-        cookieStore.set({ name, value: "", ...options });
+        try {
+          cookieStore.set({ name, value: "", ...options });
+        } catch {
+          // Ignore - same reason as above
+        }
       },
     },
   });
