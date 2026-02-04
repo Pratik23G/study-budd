@@ -12,7 +12,7 @@ python-dotenv>=1.0.0
 httpx>=0.28.0
 supabase>=2.10.0
 python-multipart>=0.0.9
-PyJWT>=2.9.0
+PyJWT[crypto]>=2.9.0
 
 [dev]
 pytest>=8.0.0
