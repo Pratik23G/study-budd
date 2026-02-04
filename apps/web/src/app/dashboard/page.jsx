@@ -29,7 +29,7 @@ export default function DashboardHome() {
       const u = data?.user ?? null;
       setUser(u);
 
-      // ✅ placeholder “personalization” without DB
+      //  placeholder “personalization” without DB
       if (u?.email) {
         setRecent({
           lastSession: {

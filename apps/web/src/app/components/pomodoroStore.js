@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { logFocusCompletion } from "../../lib/pomodoro/logFocusCompletion"; //  correct path from /components
 
 function pad2(n) {
   return String(n).padStart(2, "0");
@@ -31,12 +32,15 @@ function saveState(state) {
 }
 
 export function usePomodoroStore() {
-  // Load persisted state if available
   const persisted = loadInitial();
 
   const [studyMinutes, setStudyMinutes] = useState(persisted?.studyMinutes ?? 25);
-  const [shortBreakMinutes, setShortBreakMinutes] = useState(persisted?.shortBreakMinutes ?? 5);
-  const [longBreakMinutes, setLongBreakMinutes] = useState(persisted?.longBreakMinutes ?? 15);
+  const [shortBreakMinutes, setShortBreakMinutes] = useState(
+    persisted?.shortBreakMinutes ?? 5
+  );
+  const [longBreakMinutes, setLongBreakMinutes] = useState(
+    persisted?.longBreakMinutes ?? 15
+  );
   const [longBreakEvery, setLongBreakEvery] = useState(persisted?.longBreakEvery ?? 4);
 
   const [mode, setMode] = useState(persisted?.mode ?? "focus");
@@ -44,7 +48,6 @@ export function usePomodoroStore() {
   const [cycleCount, setCycleCount] = useState(persisted?.cycleCount ?? 0);
 
   const [secondsLeft, setSecondsLeft] = useState(() => {
-    // If we saved a “target end timestamp”, compute remaining accurately
     const now = Date.now();
     const targetEnd = persisted?.targetEndMs ?? null;
 
@@ -52,16 +55,20 @@ export function usePomodoroStore() {
       return Math.max(0, Math.floor((targetEnd - now) / 1000));
     }
 
-    // fallback: use saved secondsLeft or full time
     if (typeof persisted?.secondsLeft === "number") return persisted.secondsLeft;
 
-    return totalSecondsForMode(mode, studyMinutes, shortBreakMinutes, longBreakMinutes);
+    // use persisted defaults to avoid relying on runtime state here
+    const initMode = persisted?.mode ?? "focus";
+    const initStudy = persisted?.studyMinutes ?? 25;
+    const initShort = persisted?.shortBreakMinutes ?? 5;
+    const initLong = persisted?.longBreakMinutes ?? 15;
+
+    return totalSecondsForMode(initMode, initStudy, initShort, initLong);
   });
 
-  // This is the key: store the absolute end time when running
   const targetEndMsRef = useRef(persisted?.targetEndMs ?? null);
 
-  // Persist on any important change
+  // Persist
   useEffect(() => {
     saveState({
       studyMinutes,
@@ -85,22 +92,21 @@ export function usePomodoroStore() {
     secondsLeft,
   ]);
 
-  // When user changes durations while paused AND hasn’t started session, keep in sync
+  // Keep secondsLeft in sync when paused and editing durations
   useEffect(() => {
     const newTotal = totalSecondsForMode(mode, studyMinutes, shortBreakMinutes, longBreakMinutes);
     if (!isRunning) {
-      // If at full time, update
-      const atFullTime = secondsLeft === newTotal || secondsLeft > newTotal; // safe
+      const atFullTime = secondsLeft === newTotal || secondsLeft > newTotal;
       if (atFullTime) setSecondsLeft(newTotal);
       targetEndMsRef.current = null;
     }
-  }, [mode, studyMinutes, shortBreakMinutes, longBreakMinutes]); // intentionally omit isRunning/secondsLeft
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, studyMinutes, shortBreakMinutes, longBreakMinutes]);
 
   // Tick using targetEndMs so route changes don't matter
   useEffect(() => {
     if (!isRunning) return;
 
-    // If we don't have a target end time (fresh start), create it
     if (!targetEndMsRef.current) {
       targetEndMsRef.current = Date.now() + secondsLeft * 1000;
     }
@@ -108,10 +114,10 @@ export function usePomodoroStore() {
     const id = setInterval(() => {
       const remaining = Math.max(0, Math.floor((targetEndMsRef.current - Date.now()) / 1000));
       setSecondsLeft(remaining);
-    }, 250); // smoother & more accurate than 1000ms
+    }, 250);
 
     return () => clearInterval(id);
-  }, [isRunning]);
+  }, [isRunning]); // intentionally only isRunning
 
   // Auto advance when hit 0
   useEffect(() => {
@@ -121,6 +127,9 @@ export function usePomodoroStore() {
     targetEndMsRef.current = null;
 
     if (mode === "focus") {
+      // ✅ LOG HERE (only when a focus session actually finishes)
+      logFocusCompletion({ minutes: studyMinutes }).catch(() => {});
+
       const nextCycle = cycleCount + 1;
       setCycleCount(nextCycle);
 
@@ -128,11 +137,21 @@ export function usePomodoroStore() {
       const nextMode = isLong ? "longBreak" : "shortBreak";
       setMode(nextMode);
 
-      const nextSeconds = totalSecondsForMode(nextMode, studyMinutes, shortBreakMinutes, longBreakMinutes);
+      const nextSeconds = totalSecondsForMode(
+        nextMode,
+        studyMinutes,
+        shortBreakMinutes,
+        longBreakMinutes
+      );
       setSecondsLeft(nextSeconds);
     } else {
       setMode("focus");
-      const nextSeconds = totalSecondsForMode("focus", studyMinutes, shortBreakMinutes, longBreakMinutes);
+      const nextSeconds = totalSecondsForMode(
+        "focus",
+        studyMinutes,
+        shortBreakMinutes,
+        longBreakMinutes
+      );
       setSecondsLeft(nextSeconds);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -140,17 +159,20 @@ export function usePomodoroStore() {
 
   // Actions
   function start() {
-    if (secondsLeft === 0) {
-      const fresh = totalSecondsForMode(mode, studyMinutes, shortBreakMinutes, longBreakMinutes);
-      setSecondsLeft(fresh);
-    }
+    const fresh =
+      secondsLeft === 0
+        ? totalSecondsForMode(mode, studyMinutes, shortBreakMinutes, longBreakMinutes)
+        : secondsLeft;
+
+    if (secondsLeft === 0) setSecondsLeft(fresh);
+
     setIsRunning(true);
-    targetEndMsRef.current = Date.now() + secondsLeft * 1000;
+    targetEndMsRef.current = Date.now() + fresh * 1000; // ✅ use fresh, not stale secondsLeft
   }
 
   function pause() {
     setIsRunning(false);
-    targetEndMsRef.current = null; // stop absolute clock; secondsLeft stays frozen
+    targetEndMsRef.current = null;
   }
 
   function resetTimer() {
@@ -190,7 +212,6 @@ export function usePomodoroStore() {
   })();
 
   return {
-    // state
     studyMinutes,
     shortBreakMinutes,
     longBreakMinutes,
@@ -204,13 +225,11 @@ export function usePomodoroStore() {
     ss,
     ringPercent,
 
-    // setters
     setStudyMinutes,
     setShortBreakMinutes,
     setLongBreakMinutes,
     setLongBreakEvery,
 
-    // actions
     start,
     pause,
     resetTimer,
