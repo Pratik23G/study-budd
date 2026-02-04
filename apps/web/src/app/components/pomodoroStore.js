@@ -117,6 +117,7 @@ export function usePomodoroStore() {
     }, 250);
 
     return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isRunning]); // intentionally only isRunning
 
   // Auto advance when hit 0
