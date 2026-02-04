@@ -1,20 +1,98 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowser } from "../../lib/supabase/client";
-import { getMyProfile, updateMyProfile } from "../../lib/profile";
-
-function getPublicAvatarUrl(supabase, path) {
-  if (!path) return "";
-  // If you store a full URL, return as-is
-  if (path.startsWith("http")) return path;
-
-  const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-  return data?.publicUrl ?? "";
-}
+import AvatarUploader from "../components/AvatarUploader";
+import ProductivityHeatmap from "../components/ProductivityHeatmap";
 
 export default function AccountPage() {
+  const router = useRouter();
+
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const [user, setUser] = useState(null);
+  const [fullName, setFullName] = useState("");
+  const [notice, setNotice] = useState("");
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowser();
+
+    async function load() {
+      setLoading(true);
+      setNotice("");
+
+      const { data, error } = await supabase.auth.getUser();
+      if (error) console.error(error);
+
+      const u = data?.user ?? null;
+      setUser(u);
+
+      if (!u) {
+        // not logged in
+        router.push("/auth");
+        return;
+      }
+
+      // Load profile
+      const { data: profile, error: profErr } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", u.id)
+        .single();
+
+      if (profErr) {
+        // If profile row doesn't exist yet, that's okay; we'll create on save
+        console.warn("Profile load warning:", profErr.message);
+      }
+
+      setFullName(profile?.full_name ?? "");
+      setLoading(false);
+    }
+
+    load();
+
+    // keep in sync if auth changes
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => sub?.subscription?.unsubscribe();
+  }, [router]);
+
+  async function saveChanges() {
+    if (!user) return;
+
+    const supabase = createSupabaseBrowser();
+    setSaving(true);
+    setNotice("");
+
+    try {
+      const { error } = await supabase.from("profiles").upsert({
+        id: user.id,
+        full_name: fullName,
+        updated_at: new Date().toISOString(),
+      });
+
+      if (error) throw error;
+
+      setNotice("Saved ✅");
+    } catch (e) {
+      console.error(e);
+      setNotice("Save failed. Check console.");
+    } finally {
+      setSaving(false);
+      setTimeout(() => setNotice(""), 2500);
+    }
+  }
+
+  async function signOut() {
+    const supabase = createSupabaseBrowser();
+    await supabase.auth.signOut();
+    router.push("/");
+  }
+
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900 text-white">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 py-10">
@@ -28,43 +106,61 @@ export default function AccountPage() {
         </div>
 
         <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-[0_20px_60px_-30px_rgba(0,0,0,0.8)] p-6 sm:p-8">
-          {/* Put your existing account UI inside this card */}
-          {/* Example placeholder */}
-          <div className="grid gap-6 sm:grid-cols-[160px_1fr] items-start">
+          <div className="grid gap-6 sm:grid-cols-[220px_1fr] items-start">
+            {/* ✅ REAL AVATAR UPLOADER */}
             <div className="rounded-2xl bg-white/5 border border-white/10 p-4">
-              <div className="h-24 w-24 rounded-full bg-gradient-to-br from-indigo-500 to-blue-500 grid place-items-center text-2xl font-black">
-                PG
-              </div>
-              <button className="mt-4 w-full rounded-xl bg-white text-slate-900 font-semibold py-2 hover:bg-white/90 transition">
-                Upload avatar
-              </button>
+              <AvatarUploader />
+              <p className="mt-3 text-xs text-white/50">
+                Avatar stored in Supabase Storage (avatars bucket).
+              </p>
             </div>
 
+            {/* Profile form */}
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-semibold text-white/80">
                   Full name
                 </label>
                 <input
-                  className="mt-2 w-full rounded-xl bg-slate-950/40 border border-white/10 px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-400"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  disabled={loading}
+                  className="mt-2 w-full rounded-xl bg-slate-950/40 border border-white/10 px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-400 disabled:opacity-60"
                   placeholder="Pratik Gurung"
                 />
               </div>
 
-              <div className="flex gap-3">
-                <button className="rounded-xl bg-indigo-500 px-5 py-3 font-semibold hover:bg-indigo-600 transition">
-                  Save changes
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  onClick={saveChanges}
+                  disabled={loading || saving}
+                  className="rounded-xl bg-indigo-500 px-5 py-3 font-semibold hover:bg-indigo-600 transition disabled:opacity-60"
+                >
+                  {saving ? "Saving..." : "Save changes"}
                 </button>
-                <button className="rounded-xl bg-white/10 px-5 py-3 font-semibold hover:bg-white/15 transition">
+
+                <button
+                  onClick={signOut}
+                  className="rounded-xl bg-white/10 px-5 py-3 font-semibold hover:bg-white/15 transition"
+                >
                   Sign out
                 </button>
+
+                {notice ? (
+                  <span className="text-sm text-white/80">{notice}</span>
+                ) : null}
               </div>
 
               <p className="text-xs text-white/50">
-                Profile data in Supabase (profiles table). Avatar stored in Storage (avatars bucket).
+                Profile data in Supabase (profiles table).
               </p>
             </div>
           </div>
+        </div>
+
+        {/* ✅ GitHub-style productivity section */}
+        <div className="mt-6">
+          <ProductivityHeatmap />
         </div>
       </div>
     </main>
