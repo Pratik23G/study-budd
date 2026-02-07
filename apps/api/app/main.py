@@ -117,3 +117,10 @@ async def login(credentials: UserCredentials):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+
+# NEW FOR RAG
+from fastapi import FastAPI
+from app.routers.processing import router as processing_router
+
+app = FastAPI()
+app.include_router(processing_router)

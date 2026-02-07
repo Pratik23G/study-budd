@@ -1,17 +1,45 @@
-"""Pydantic schemas for document processing."""
+"""Pydantic schemas for document processing + RAG."""
 
-from pydantic import BaseModel
+from __future__ import annotations
+
+from typing import Any, Optional
+from uuid import UUID
+
+from pydantic import BaseModel, Field
+
+
+class ProcessRequest(BaseModel):
+    """Text payload to chunk + embed + store."""
+    title: str = Field(default="untitled")
+    text: str
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class ProcessingStatusResponse(BaseModel):
     """Response schema for processing status."""
-
-    # TODO: Define fields
-    pass
+    document_id: UUID
+    status: str
+    chunks_count: int
+    error: Optional[str] = None
 
 
 class ChunkResponse(BaseModel):
     """Response schema for a document chunk."""
+    id: UUID
+    document_id: UUID
+    chunk_index: int
+    content: str
+    metadata: dict[str, Any]
 
-    # TODO: Define fields
-    pass
+
+class QueryRequest(BaseModel):
+    document_id: UUID
+    question: str
+    top_k: int = 5
+
+
+class QueryResponse(BaseModel):
+    document_id: UUID
+    question: str
+    answer: str
+    context_chunks: list[ChunkResponse]
