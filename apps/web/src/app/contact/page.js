@@ -44,7 +44,7 @@ export default function ContactPage() {
         <div className="text-center mb-12">
           <h1 className="text-4xl font-black text-slate-900 tracking-tight">Get in Touch</h1>
           <p className="mt-3 text-lg text-slate-600">
-            Have a question or feedback? We'd love to hear from you.
+            Have a question or feedback? We&apos;d love to hear from you.
           </p>
         </div>
 
@@ -63,7 +63,7 @@ export default function ContactPage() {
               </svg>
             </div>
             <h2 className="text-xl font-bold text-green-800">Message Sent!</h2>
-            <p className="mt-2 text-green-700">We'll get back to you as soon as possible.</p>
+            <p className="mt-2 text-green-700">We&apos;ll get back to you as soon as possible.</p>
             <Link
               href="/"
               className="inline-block mt-6 px-6 py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-colors"

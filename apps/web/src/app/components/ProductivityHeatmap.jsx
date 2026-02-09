@@ -1,0 +1,145 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { createSupabaseBrowser } from "../../lib/supabase/client";
+
+function toDayKey(d) {
+  return d.toLocaleDateString("en-CA"); // YYYY-MM-DD
+}
+
+function startOfWeekSunday(date) {
+  const d = new Date(date);
+  const day = d.getDay(); // 0=Sun
+  d.setDate(d.getDate() - day);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+export default function ProductivityHeatmap() {
+  const supabase = createSupabaseBrowser();
+
+  const [cells, setCells] = useState([]); // array length ~371 (53w*7)
+  const [streak, setStreak] = useState(0);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.auth.getUser();
+      const user = data?.user;
+      if (!user) return;
+
+      const today = new Date();
+      const end = new Date(today);
+      end.setHours(0, 0, 0, 0);
+
+      // GitHub-like: show last 52 weeks + current (53 columns)
+      const start = new Date(end);
+      start.setDate(start.getDate() - 370);
+      const alignedStart = startOfWeekSunday(start);
+
+      const startKey = toDayKey(alignedStart);
+      const endKey = toDayKey(end);
+
+      const { data: rows, error } = await supabase
+        .from("productivity_days")
+        .select("day, focus_minutes")
+        .eq("user_id", user.id)
+        .gte("day", startKey)
+        .lte("day", endKey);
+
+      if (error) console.warn("Heatmap query error:", error.message);
+
+      const map = new Map((rows ?? []).map((r) => [r.day, r.focus_minutes]));
+
+      const all = [];
+      const cursor = new Date(alignedStart);
+
+      for (let i = 0; i < 371; i++) {
+        const k = toDayKey(cursor);
+        all.push({ day: k, minutes: map.get(k) ?? 0, dow: cursor.getDay() });
+        cursor.setDate(cursor.getDate() + 1);
+      }
+
+      setCells(all);
+
+      // streak: consecutive days ending today with minutes > 0
+      let s = 0;
+      const back = new Date(end);
+      while (true) {
+        const k = toDayKey(back);
+        if ((map.get(k) ?? 0) > 0) {
+          s++;
+          back.setDate(back.getDate() - 1);
+        } else break;
+      }
+      setStreak(s);
+    })();
+  }, []);
+
+  const max = useMemo(() => Math.max(1, ...cells.map((c) => c.minutes)), [cells]);
+
+  function level(minutes) {
+    if (minutes <= 0) return 0;
+    const r = minutes / max;
+    if (r < 0.25) return 1;
+    if (r < 0.5) return 2;
+    if (r < 0.75) return 3;
+    return 4;
+  }
+
+  const colors = [
+    "bg-white/10",
+    "bg-emerald-900/60",
+    "bg-emerald-800/70",
+    "bg-emerald-600/80",
+    "bg-emerald-400/90",
+  ];
+
+  // Build weeks: 53 columns, each column is 7 cells (Sun..Sat)
+  const weeks = useMemo(() => {
+    const w = [];
+    for (let i = 0; i < cells.length; i += 7) w.push(cells.slice(i, i + 7));
+    return w;
+  }, [cells]);
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-5">
+      <div className="flex items-end justify-between gap-4">
+        <div>
+          <div className="text-white font-extrabold text-lg">Productivity</div>
+          <div className="text-white/70 text-sm">
+            Current streak: <span className="font-bold text-white">{streak}</span> day(s)
+          </div>
+        </div>
+        <div className="text-white/50 text-xs">Last 52 weeks</div>
+      </div>
+
+      <div className="mt-4 overflow-x-auto">
+        <div className="inline-flex gap-1">
+          {weeks.map((week, wi) => (
+            <div key={wi} className="flex flex-col gap-1">
+              {week.map((c) => (
+                <div
+                  key={c.day}
+                  title={`${c.day}: ${c.minutes} min`}
+                  className={`h-3 w-3 rounded-[3px] ${colors[level(c.minutes)]}`}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-3 flex items-center justify-end gap-2 text-xs text-white/60">
+        <span>Less</span>
+        {colors.map((cls, i) => (
+          <div key={i} className={`h-3 w-3 rounded-[3px] ${cls}`} />
+        ))}
+        <span>More</span>
+      </div>
+
+      <div className="mt-2 text-xs text-white/40">
+        Tip: This fills in once you <b>finish</b> a focus Pomodoro (hits 0).
+      </div>
+    </div>
+  );
+}
