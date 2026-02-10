@@ -35,6 +35,10 @@ class Settings(BaseSettings):
     # Application
     app_name: str = "StudyBudd API"
     debug: bool = False
+    log_level: str = Field(
+        default="INFO",
+        validation_alias=AliasChoices("LOG_LEVEL", "log_level"),
+    )
     
     # Development - set DEV_USER_ID to bypass auth in debug mode
     dev_user_id: str | None = None

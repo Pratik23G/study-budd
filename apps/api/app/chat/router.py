@@ -1,44 +1,61 @@
-from fastapi import APIRouter, HTTPException, Depends, Header
-from typing import List, Optional
+import logging
+from typing import List
+
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
+
+from app.core.dependencies import CurrentUser
 from .schemas import ChatRequest, ChatResponse, ConversationResponse, MessageResponse
 from .service import ChatService
 
-# Initialize Router
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/chat", tags=["chat"])
 chat_service = ChatService()
 
-# Dependency to get User ID
-# TODO: Replace with actual JWT Auth dependency in the future
-async def get_current_user_id(x_user_id: Optional[str] = Header(None)):
-    """
-    Temporary dependency to extract user ID from headers.
-    In production, this should parse the Bearer Token.
-    """
-    if not x_user_id:
-        # You can hardcode a UUID here for testing if you don't want to send headers
-        # return "test-user-uuid" 
-        raise HTTPException(status_code=401, detail="User ID required for chat")
-    return x_user_id
 
 @router.post("/", response_model=ChatResponse)
-async def chat(request: ChatRequest, user_id: str = Depends(get_current_user_id)):
-    """Endpoint to send a message and get an AI response."""
+async def chat(request: ChatRequest, user: CurrentUser):
+    """Endpoint to send a message and get an AI response (non-streaming)."""
+    user_id = str(user.user_id)
+    logger.debug("chat request user_id=%s conversation_id=%s", user_id, request.conversation_id)
     try:
         response = await chat_service.process_chat(user_id, request)
         return response
     except Exception as e:
+        logger.exception("chat failed: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@router.post("/stream")
+async def chat_stream(request: ChatRequest, user: CurrentUser):
+    """Streaming endpoint that sends tokens via Server-Sent Events."""
+    user_id = str(user.user_id)
+    logger.info("chat stream started user_id=%s conversation_id=%s", user_id, request.conversation_id)
+    return StreamingResponse(
+        chat_service.process_chat_stream(user_id, request),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
 @router.get("/conversations", response_model=List[ConversationResponse])
-async def list_conversations(user_id: str = Depends(get_current_user_id)):
+async def list_conversations(user: CurrentUser):
     """Endpoint to list all conversations for the current user."""
-    # Importing supabase here temporarily to keep service simple
     from .service import supabase
+
+    user_id = str(user.user_id)
+    logger.debug("list_conversations user_id=%s", user_id)
     res = supabase.table("conversations").select("*").eq("user_id", user_id).order("updated_at", desc=True).execute()
     return res.data
 
+
 @router.get("/conversations/{conversation_id}", response_model=List[MessageResponse])
-async def get_conversation_history(conversation_id: str, user_id: str = Depends(get_current_user_id)):
+async def get_conversation_history(conversation_id: str, user: CurrentUser):
     """Endpoint to get full message history of a specific conversation."""
+    user_id = str(user.user_id)
+    logger.debug("get_conversation_history user_id=%s conversation_id=%s", user_id, conversation_id)
     history = await chat_service.get_history(conversation_id, user_id)
     return history

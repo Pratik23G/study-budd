@@ -1,5 +1,10 @@
+import json
+import logging
 import os
+from typing import AsyncGenerator
 from supabase import Client, create_client
+
+logger = logging.getLogger(__name__)
 from .schemas import ChatRequest, ChatResponse, MessageResponse
 from fastapi import HTTPException
 from datetime import datetime
@@ -17,9 +22,9 @@ key = (
 )
 
 if not url or not key:
-    print("❌ Error: Supabase URL or KEY is missing in chat/service.py")
+    logger.error("Supabase URL or KEY is missing in chat/service.py")
 else:
-    print("✅ Chat Service: Supabase connected.")
+    logger.info("Supabase connected")
 
 supabase: Client = create_client(url, key)
 
@@ -49,10 +54,29 @@ class ChatService:
             "title": title
         }
         res = supabase.table("conversations").insert(data).execute()
-        return res.data[0]
+        conv = res.data[0]
+        logger.info("conversation created user_id=%s conversation_id=%s", user_id, conv["id"])
+        return conv
 
     async def get_history(self, conversation_id: str, user_id: str):
-        """Fetches message history for a specific conversation."""
+        """Fetches message history for a specific conversation.
+
+        Verifies the conversation belongs to the requesting user before
+        returning messages.
+        """
+        # Ownership check: ensure the conversation belongs to this user
+        conv_res = supabase.table("conversations")\
+            .select("id")\
+            .eq("id", conversation_id)\
+            .eq("user_id", user_id)\
+            .execute()
+
+        if not conv_res.data:
+            raise HTTPException(
+                status_code=404,
+                detail="Conversation not found",
+            )
+
         res = supabase.table("messages")\
             .select("*")\
             .eq("conversation_id", conversation_id)\
@@ -113,12 +137,17 @@ class ChatService:
 
         try:
             llm = _get_llm()
-            ai_response_text = await llm.chat(
+            logger.debug("LLM chat started conversation_id=%s history_len=%d", conversation_id, len(history_without_latest))
+            chunks: list[str] = []
+            async for token in llm.chat(
                 user_message=request.message,
                 conversation_history=history_without_latest,
-            )
+            ):
+                chunks.append(token)
+            ai_response_text = "".join(chunks)
+            logger.debug("LLM chat completed conversation_id=%s response_len=%d", conversation_id, len(ai_response_text))
         except Exception as e:
-            print(f"LLM Error: {e}")
+            logger.exception("LLM Error: %s", e)
             ai_response_text = "Sorry, I'm having trouble generating a response right now. Please try again."
 
         sources = []
@@ -149,3 +178,84 @@ class ChatService:
                 sources=sources
             )
         )
+
+    async def process_chat_stream(
+        self, user_id: str, request: ChatRequest
+    ) -> AsyncGenerator[str, None]:
+        """
+        Streaming version of process_chat.
+
+        Yields SSE-formatted events:
+          - 'event: token\\ndata: <chunk>\\n\\n'  for each LLM token
+          - 'event: done\\ndata: {json}\\n\\n'     once with final metadata
+
+        The full response is accumulated and saved to the DB after
+        the stream finishes.
+        """
+        conversation_id = request.conversation_id
+
+        # 1. Create conversation if needed
+        if not conversation_id:
+            new_conv = await self.create_conversation(
+                user_id, title=request.message[:50]
+            )
+            conversation_id = new_conv["id"]
+
+        # 2. Save user message
+        user_msg_data = {
+            "conversation_id": conversation_id,
+            "role": "user",
+            "content": request.message,
+        }
+        supabase.table("messages").insert(user_msg_data).execute()
+
+        # 3. Build history (pop latest user msg; the LLM client re-appends it)
+        history = self._build_history(conversation_id)
+        history_without_latest = history[:-1] if history else []
+
+        # 4. Stream tokens from the LLM
+        accumulated_text = ""
+        logger.debug("chat stream LLM started conversation_id=%s", conversation_id)
+        try:
+            llm = _get_llm()
+            async for token in llm.chat(
+                user_message=request.message,
+                conversation_history=history_without_latest,
+            ):
+                accumulated_text += token
+                yield f"event: token\ndata: {token}\n\n"
+        except Exception as e:
+            logger.exception("LLM Stream Error: %s", e)
+            fallback = "Sorry, I'm having trouble generating a response right now. Please try again."
+            accumulated_text = fallback
+            yield f"event: token\ndata: {fallback}\n\n"
+
+        logger.debug("chat stream LLM completed conversation_id=%s response_len=%d", conversation_id, len(accumulated_text))
+
+        # 5. Save the complete AI message to DB
+        ai_msg_data = {
+            "conversation_id": conversation_id,
+            "role": "assistant",
+            "content": accumulated_text,
+            "sources": [],
+        }
+        ai_res = supabase.table("messages").insert(ai_msg_data).execute()
+        ai_msg_record = ai_res.data[0]
+
+        # 6. Update conversation timestamp
+        supabase.table("conversations") \
+            .update({"updated_at": datetime.utcnow().isoformat()}) \
+            .eq("id", conversation_id) \
+            .execute()
+
+        # 7. Yield final metadata event
+        done_payload = json.dumps({
+            "conversation_id": conversation_id,
+            "message": {
+                "id": ai_msg_record["id"],
+                "role": "assistant",
+                "content": ai_msg_record["content"],
+                "created_at": ai_msg_record["created_at"],
+            },
+        })
+        yield f"event: done\ndata: {done_payload}\n\n"
