@@ -17,7 +17,7 @@ class Base(DeclarativeBase):
 
 
 class Document(Base):
-    __tablename__ = "documents"
+    __tablename__ = "processing_documents"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     title: Mapped[str] = mapped_column(String(255), default="untitled")
@@ -45,7 +45,7 @@ class DocumentChunk(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     document_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("documents.id", ondelete="CASCADE"),
+        ForeignKey("processing_documents.id", ondelete="CASCADE"),
         index=True,
     )
 
@@ -54,8 +54,8 @@ class DocumentChunk(Base):
     metadata: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
 
     # NOTE: choose a dimension and be consistent everywhere.
-    # If you later switch to OpenAI embeddings, update EMBEDDING_DIM accordingly.
-    embedding: Mapped[list[float]] = mapped_column(Vector(384))
+    # Together BAAI/bge-base-en-v1.5 outputs 768. Match EMBEDDING_DIM in router.
+    embedding: Mapped[list[float]] = mapped_column(Vector(768))
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

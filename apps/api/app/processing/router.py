@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import hashlib
 import math
-import os
 import re
 from typing import Any
 from uuid import UUID
@@ -14,9 +13,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_settings
 from app.core.database import get_db
-from app.models.processing import Document, DocumentChunk
-from app.schemas.processing import (
+from app.processing.models import Document, DocumentChunk
+from app.processing.schemas import (
     ChunkResponse,
     ProcessRequest,
     ProcessingStatusResponse,
@@ -26,7 +26,8 @@ from app.schemas.processing import (
 
 router = APIRouter(prefix="/processing", tags=["processing"])
 
-EMBEDDING_DIM = 384  # must match Vector(dim) in models.py
+# Together BAAI/bge-base-en-v1.5 outputs 768. Must match Vector(dim) in models.py.
+EMBEDDING_DIM = 768
 
 
 # ----------------------------
@@ -52,7 +53,7 @@ def chunk_text(text: str, max_chars: int = 900, overlap: int = 150) -> list[str]
 
 
 # ----------------------------
-# Embeddings (OpenAI if configured, else deterministic fallback)
+# Embeddings (Together API if configured, else deterministic fallback)
 # ----------------------------
 def _hash_to_unit_vector(s: str, dim: int = EMBEDDING_DIM) -> list[float]:
     """
@@ -75,18 +76,17 @@ def _hash_to_unit_vector(s: str, dim: int = EMBEDDING_DIM) -> list[float]:
 
 
 async def embed(texts: list[str]) -> list[list[float]]:
-    api_key = os.getenv("OPENAI_API_KEY")
-    model = os.getenv("OPENAI_EMBED_MODEL", "text-embedding-3-small")  # dimension varies!
-    if not api_key:
+    """Generate embeddings via Together API or fallback to deterministic hash vectors."""
+    settings = get_settings()
+    if not settings.together_api_key:
         return [_hash_to_unit_vector(t) for t in texts]
 
-    # If you use OpenAI embeddings, ensure EMBEDDING_DIM matches that model’s output dimension,
-    # or change your Vector(dim) + migration accordingly.
+    # ensure EMBEDDING_DIM matches that model's output dimension
     async with httpx.AsyncClient(timeout=30.0) as client:
         r = await client.post(
-            "https://api.openai.com/v1/embeddings",
-            headers={"Authorization": f"Bearer {api_key}"},
-            json={"model": model, "input": texts},
+            "https://api.together.xyz/v1/embeddings",
+            headers={"Authorization": f"Bearer {settings.together_api_key}"},
+            json={"model": settings.together_embed_model, "input": texts},
         )
         if r.status_code >= 400:
             raise HTTPException(status_code=502, detail=f"Embedding provider error: {r.text}")
@@ -107,24 +107,24 @@ async def embed(texts: list[str]) -> list[list[float]]:
 
 
 # ----------------------------
-# Optional generation (OpenAI chat if configured)
+# RAG answer generation (Together chat if configured)
 # ----------------------------
 async def generate_answer(question: str, context: str) -> str:
-    api_key = os.getenv("OPENAI_API_KEY")
-    chat_model = os.getenv("OPENAI_CHAT_MODEL", "gpt-4o-mini")
-    if not api_key:
+    """Generate RAG answer via Together chat API."""
+    settings = get_settings()
+    if not settings.together_api_key:
         return (
-            "No LLM configured (OPENAI_API_KEY not set). "
+            "No LLM configured (TOGETHER_API_KEY not set). "
             "Here is the retrieved context you can use:\n\n"
             f"{context}"
         )
 
     async with httpx.AsyncClient(timeout=45.0) as client:
         r = await client.post(
-            "https://api.openai.com/v1/chat/completions",
-            headers={"Authorization": f"Bearer {api_key}"},
+            "https://api.together.xyz/v1/chat/completions",
+            headers={"Authorization": f"Bearer {settings.together_api_key}"},
             json={
-                "model": chat_model,
+                "model": settings.together_model,
                 "messages": [
                     {
                         "role": "system",
@@ -139,6 +139,7 @@ async def generate_answer(question: str, context: str) -> str:
                     },
                 ],
                 "temperature": 0.2,
+                "max_tokens": settings.together_max_tokens,
             },
         )
         if r.status_code >= 400:

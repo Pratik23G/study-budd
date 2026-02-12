@@ -2,6 +2,7 @@
 
 from collections.abc import AsyncGenerator
 
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.core.config import get_settings
@@ -30,4 +31,7 @@ async_session_maker = async_sessionmaker(
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """Dependency for getting database sessions."""
     async with async_session_maker() as session:
+        # Supabase Vector: pgvector type/operators live in vector_db; set so queries resolve
+        if "supabase" in settings.database_url or "supabase" in settings.db_host:
+            await session.execute(text("SET search_path TO public, vector_db"))
         yield session
