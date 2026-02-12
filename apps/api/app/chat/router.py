@@ -59,3 +59,32 @@ async def get_conversation_history(conversation_id: str, user: CurrentUser):
     logger.debug("get_conversation_history user_id=%s conversation_id=%s", user_id, conversation_id)
     history = await chat_service.get_history(conversation_id, user_id)
     return history
+
+
+@router.delete("/conversations/{conversation_id}")
+async def delete_conversation(conversation_id: str, user: CurrentUser):
+    """Endpoint to delete a conversation and its messages."""
+    from .service import supabase
+
+    user_id = str(user.user_id)
+    logger.debug("delete_conversation user_id=%s conversation_id=%s", user_id, conversation_id)
+
+    # Verify ownership
+    conv_res = (
+        supabase.table("conversations")
+        .select("id")
+        .eq("id", conversation_id)
+        .eq("user_id", user_id)
+        .execute()
+    )
+
+    if not conv_res.data:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    # Delete messages first (foreign key constraint)
+    supabase.table("messages").delete().eq("conversation_id", conversation_id).execute()
+
+    # Delete the conversation
+    supabase.table("conversations").delete().eq("id", conversation_id).execute()
+
+    return {"status": "ok"}
