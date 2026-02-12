@@ -31,6 +31,9 @@ export default function ChatPage() {
   const fileInputRef = useRef(null);
   const messagesContainerRef = useRef(null);
 
+  // Delete confirmation modal
+  const [deletePendingId, setDeletePendingId] = useState(null);
+
   // Whether this is a fresh new conversation (no user messages yet)
   const isNewConversation = !activeId && messages.every((m) => m.role === "assistant" && m.content === "What are you studying today?");
 
@@ -75,6 +78,32 @@ export default function ChatPage() {
       setThreads(res.data);
     } catch (err) {
       console.error("Failed to load threads:", err);
+    }
+  }
+
+  function openDeleteConfirm(e, conversationId) {
+    e.stopPropagation();
+    setDeletePendingId(conversationId);
+  }
+
+  function closeDeleteConfirm() {
+    setDeletePendingId(null);
+  }
+
+  async function confirmDeleteChat() {
+    if (!accessToken || !deletePendingId) return;
+    const conversationId = deletePendingId;
+    setDeletePendingId(null);
+    try {
+      await axios.delete(`${API_BASE}/chat/conversations/${conversationId}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      setThreads((prev) => prev.filter((t) => t.id !== conversationId));
+      if (activeId === conversationId) {
+        setActiveId(null);
+      }
+    } catch (err) {
+      console.error("Failed to delete chat:", err);
     }
   }
 
@@ -281,6 +310,16 @@ export default function ChatPage() {
     return () => document.removeEventListener("click", onDocClick);
   }, []);
 
+  // Close delete modal on Escape
+  useEffect(() => {
+    if (!deletePendingId) return;
+    function onKeyDown(e) {
+      if (e.key === "Escape") closeDeleteConfirm();
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [deletePendingId]);
+
   function onPickFiles(e) {
     const list = Array.from(e.target.files || []);
     if (!list.length) return;
@@ -294,6 +333,44 @@ export default function ChatPage() {
   // ------------------------------------------------------------------
   return (
     <div className="h-full flex relative overflow-hidden">
+      {/* Delete confirmation modal */}
+      {deletePendingId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-slate-900/50"
+            onClick={closeDeleteConfirm}
+            aria-hidden="true"
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-dialog-title"
+            className="relative z-10 w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl border border-slate-200"
+          >
+            <h3 id="delete-dialog-title" className="text-lg font-bold text-slate-900 mb-2">
+              Delete this chat?
+            </h3>
+            <p className="text-sm text-slate-600 mb-6">
+              This cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={closeDeleteConfirm}
+                className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteChat}
+                className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Collapsible sidebar (overlay on mobile, inline on lg) ── */}
 
       {/* Backdrop for mobile overlay */}
@@ -351,26 +428,40 @@ export default function ChatPage() {
                 const isActive = t.id === activeId;
                 return (
                   <li key={t.id}>
-                    <button
-                      onClick={() => {
-                        setActiveId(t.id);
-                        setSidebarOpen(false);
-                      }}
-                      className={`w-full rounded-xl px-3 py-2.5 text-left transition-colors ${
+                    <div
+                      className={`flex items-center gap-2 rounded-xl px-3 py-2.5 transition-colors ${
                         isActive
                           ? "bg-indigo-50 border border-indigo-200"
                           : "hover:bg-slate-50 border border-transparent"
                       }`}
                     >
-                      <p className="font-semibold text-slate-900 truncate text-sm">
-                        {t.title}
-                      </p>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        {new Date(
-                          t.created_at || Date.now()
-                        ).toLocaleDateString()}
-                      </p>
-                    </button>
+                      <button
+                        onClick={() => {
+                          setActiveId(t.id);
+                          setSidebarOpen(false);
+                        }}
+                        className="flex-1 min-w-0 text-left"
+                      >
+                        <p className="font-semibold text-slate-900 truncate text-sm">
+                          {t.title}
+                        </p>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          {new Date(
+                            t.created_at || Date.now()
+                          ).toLocaleDateString()}
+                        </p>
+                      </button>
+                      <button
+                        onClick={(e) => openDeleteConfirm(e, t.id)}
+                        title="Delete chat"
+                        className="shrink-0 rounded-md p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-red-200 focus:ring-inset"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6v13a2 2 0 01-2 2H7a2 2 0 01-2-2V6" />
+                          <path d="M10 11v6M14 11v6" />
+                        </svg>
+                      </button>
+                    </div>
                   </li>
                 );
               })}
