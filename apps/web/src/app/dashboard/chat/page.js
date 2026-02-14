@@ -387,7 +387,7 @@ export default function ChatPage() {
   // Render
   // ------------------------------------------------------------------
   return (
-    <div className="h-full flex relative overflow-hidden">
+    <div className="h-full min-h-0 flex relative overflow-hidden">
       {/* Delete confirmation modal */}
       {deletePendingId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
