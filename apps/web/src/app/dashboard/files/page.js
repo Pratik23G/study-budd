@@ -54,6 +54,40 @@ function getFileIcon(fileType) {
       </svg>
     );
   }
+  if (fileType === "text") {
+    return (
+      <svg
+        className="w-8 h-8 text-green-600"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+        />
+      </svg>
+    );
+  }
+  if (fileType === "csv") {
+    return (
+      <svg
+        className="w-8 h-8 text-emerald-600"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l7 7A2 2 0 0119 19z"
+        />
+      </svg>
+    );
+  }
   return (
     <svg
       className="w-8 h-8 text-slate-400"
@@ -75,6 +109,8 @@ const FILTER_OPTIONS = [
   { id: "all", label: "All" },
   { id: "pdf", label: "PDFs" },
   { id: "image", label: "Images" },
+  { id: "text", label: "TXT" },
+  { id: "csv", label: "CSV" },
 ];
 
 const SORT_OPTIONS = [
@@ -85,16 +121,37 @@ const SORT_OPTIONS = [
   { id: "size", label: "Size" },
 ];
 
+async function getAccessToken() {
+  const supabase = createSupabaseBrowser();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const isDev = process.env.NODE_ENV === "development";
+  return session?.access_token || (isDev ? "dev-token" : null);
+}
+
 export default function FilesPage() {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(null);
   const [query, setQuery] = useState("");
 
-  // New state for modal, filter, and sort
+  // Modal, filter, sort
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
+
+  // RAG query modal
+  const [askDocumentId, setAskDocumentId] = useState(null);
+  const [askDocumentName, setAskDocumentName] = useState("");
+  const [isQueryModalOpen, setIsQueryModalOpen] = useState(false);
+  const [queryQuestion, setQueryQuestion] = useState("");
+  const [queryLoading, setQueryLoading] = useState(false);
+  const [queryResult, setQueryResult] = useState(null);
+
+  // Toast message
+  const [toastMessage, setToastMessage] = useState(null);
+  const [uploadReadyMessage, setUploadReadyMessage] = useState(null);
 
   // Fetch documents from API
   const fetchDocuments = useCallback(async () => {
@@ -133,18 +190,33 @@ export default function FilesPage() {
     fetchDocuments();
   }, [fetchDocuments]);
 
-  // Close modal on Escape key
+  // Close modals on Escape key
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === "Escape") {
         setIsUploadOpen(false);
+        setIsQueryModalOpen(false);
       }
     };
-    if (isUploadOpen) {
+    if (isUploadOpen || isQueryModalOpen) {
       document.addEventListener("keydown", handleEscape);
       return () => document.removeEventListener("keydown", handleEscape);
     }
-  }, [isUploadOpen]);
+  }, [isUploadOpen, isQueryModalOpen]);
+
+  // Toast auto-dismiss
+  useEffect(() => {
+    if (!toastMessage) return;
+    const t = setTimeout(() => setToastMessage(null), 4000);
+    return () => clearTimeout(t);
+  }, [toastMessage]);
+
+  // Upload ready message auto-dismiss
+  useEffect(() => {
+    if (!uploadReadyMessage) return;
+    const t = setTimeout(() => setUploadReadyMessage(null), 5000);
+    return () => clearTimeout(t);
+  }, [uploadReadyMessage]);
 
   // Filter and sort documents
   const filtered = useMemo(() => {
@@ -163,6 +235,10 @@ export default function FilesPage() {
       result = result.filter((d) => d.file_type === "pdf");
     } else if (activeFilter === "image") {
       result = result.filter((d) => d.file_type === "image");
+    } else if (activeFilter === "text") {
+      result = result.filter((d) => d.file_type === "text");
+    } else if (activeFilter === "csv") {
+      result = result.filter((d) => d.file_type === "csv");
     }
 
     // Sort
@@ -198,6 +274,99 @@ export default function FilesPage() {
     const newDocs = results.map((r) => r.document);
     setDocuments((prev) => [...newDocs, ...prev]);
     setIsUploadOpen(false);
+    const ready = results.some((r) => r.processing_status === "ready");
+    if (ready) {
+      setUploadReadyMessage("Documents indexed and ready for questions!");
+    }
+  };
+
+  // Handle Ask click - check status and open query modal
+  const handleAskClick = async (doc) => {
+    const accessToken = await getAccessToken();
+    if (!accessToken) {
+      setToastMessage("You must be logged in to ask questions.");
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `${API_URL}/api/processing/${doc.id}/status`,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+      if (!res.ok) {
+        setToastMessage("Could not check document status.");
+        return;
+      }
+
+      const data = await res.json();
+      if (data.status !== "ready") {
+        setToastMessage(
+          "This document is not indexed for RAG. Upload TXT or CSV files to enable questions."
+        );
+        return;
+      }
+
+      setAskDocumentId(doc.id);
+      setAskDocumentName(doc.original_filename || "Document");
+      setQueryQuestion("");
+      setQueryResult(null);
+      setIsQueryModalOpen(true);
+    } catch (err) {
+      console.error("Ask status check failed:", err);
+      setToastMessage("Failed to check document status.");
+    }
+  };
+
+  // Handle RAG query submit
+  const handleQuerySubmit = async (e) => {
+    e.preventDefault();
+    if (!askDocumentId || !queryQuestion.trim()) return;
+
+    const accessToken = await getAccessToken();
+    if (!accessToken) return;
+
+    setQueryLoading(true);
+    setQueryResult(null);
+
+    try {
+      const res = await fetch(`${API_URL}/api/processing/rag/query`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          document_id: askDocumentId,
+          question: queryQuestion.trim(),
+          top_k: 5,
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        const errMsg = Array.isArray(errData.detail)
+          ? errData.detail.map((d) => d.msg || d).join(", ")
+          : errData.detail || "Query failed.";
+        setQueryResult({ error: errMsg });
+        return;
+      }
+
+      const data = await res.json();
+      setQueryResult(data);
+    } catch (err) {
+      console.error("Query failed:", err);
+      setQueryResult({ error: "Query failed. Please try again." });
+    } finally {
+      setQueryLoading(false);
+    }
+  };
+
+  const closeQueryModal = () => {
+    setIsQueryModalOpen(false);
+    setAskDocumentId(null);
+    setAskDocumentName("");
+    setQueryQuestion("");
+    setQueryResult(null);
   };
 
   // Handle document deletion
@@ -234,6 +403,20 @@ export default function FilesPage() {
 
   return (
     <div className="space-y-4">
+      {/* Toast */}
+      {toastMessage && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] px-4 py-3 bg-slate-800 text-white text-sm font-medium rounded-lg shadow-lg">
+          {toastMessage}
+        </div>
+      )}
+
+      {/* Upload ready message */}
+      {uploadReadyMessage && (
+        <div className="px-4 py-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-medium rounded-xl">
+          {uploadReadyMessage}
+        </div>
+      )}
+
       {/* Consolidated Header Row */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-extrabold text-slate-900">Files Library</h1>
@@ -397,6 +580,13 @@ export default function FilesPage() {
                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     type="button"
+                    onClick={() => handleAskClick(doc)}
+                    className="rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100"
+                  >
+                    Ask
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => handleDelete(doc.id)}
                     disabled={deleting === doc.id}
                     className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50"
@@ -464,6 +654,127 @@ export default function FilesPage() {
             <div className="p-6">
               <DocumentUpload onUploadSuccess={handleUploadSuccess} />
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* RAG Query Modal */}
+      {isQueryModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="query-modal-title"
+        >
+          <div
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            onClick={closeQueryModal}
+          />
+          <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl border border-slate-200">
+            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+              <h2
+                id="query-modal-title"
+                className="text-lg font-extrabold text-slate-900"
+              >
+                Ask about {askDocumentName}
+              </h2>
+              <button
+                type="button"
+                onClick={closeQueryModal}
+                className="rounded-lg p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                aria-label="Close modal"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleQuerySubmit} className="p-6 space-y-4">
+              <div>
+                <label
+                  htmlFor="query-question"
+                  className="block text-sm font-semibold text-slate-700 mb-2"
+                >
+                  Your question
+                </label>
+                <input
+                  id="query-question"
+                  type="text"
+                  value={queryQuestion}
+                  onChange={(e) => setQueryQuestion(e.target.value)}
+                  placeholder="e.g. What are the main topics covered?"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 placeholder-slate-400 outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300"
+                  disabled={queryLoading}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={queryLoading || !queryQuestion.trim()}
+                className="w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {queryLoading ? (
+                  <span className="inline-flex items-center gap-2">
+                    <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Searching...
+                  </span>
+                ) : (
+                  "Submit"
+                )}
+              </button>
+            </form>
+
+            {queryResult && (
+              <div className="px-6 pb-6 space-y-4">
+                {queryResult.error ? (
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+                    {queryResult.error}
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-700 mb-2">
+                        Answer
+                      </h3>
+                      <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 whitespace-pre-wrap">
+                        {queryResult.answer}
+                      </div>
+                    </div>
+                    {queryResult.context_chunks?.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-semibold text-slate-700 mb-2">
+                          Source chunks
+                        </h3>
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                          {queryResult.context_chunks.map((chunk, i) => (
+                            <div
+                              key={chunk.id}
+                              className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700"
+                            >
+                              <span className="text-xs font-medium text-slate-500">
+                                Chunk {chunk.chunk_index + 1}
+                              </span>
+                              <p className="mt-1 line-clamp-3">{chunk.content}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
