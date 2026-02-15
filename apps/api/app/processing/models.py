@@ -63,11 +63,3 @@ class DocumentChunk(Base):
 
     document: Mapped[Document] = relationship("Document", back_populates="chunks")
 
-# TODO: Add DocumentChunk model with:
-# - id: UUID
-# - document_id: UUID (FK to documents)
-# - chunk_index: int
-# - content: str
-# - embedding: Vector (pgvector)
-# - metadata: JSON
-# - created_at: datetime
