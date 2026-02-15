@@ -8,6 +8,9 @@ const ACCEPTED_FILE_TYPES = {
   "application/pdf": [".pdf"],
   "image/png": [".png"],
   "image/jpeg": [".jpg", ".jpeg"],
+  "text/plain": [".txt"],
+  "text/csv": [".csv"],
+  "application/csv": [".csv"],
 };
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -188,6 +191,12 @@ export default function DocumentUpload({ onUploadSuccess }) {
                 </span>
                 <span className="px-3 py-1 bg-white rounded-full text-xs text-slate-600 border border-slate-200">
                   JPEG
+                </span>
+                <span className="px-3 py-1 bg-white rounded-full text-xs text-slate-600 border border-slate-200">
+                  TXT
+                </span>
+                <span className="px-3 py-1 bg-white rounded-full text-xs text-slate-600 border border-slate-200">
+                  CSV
                 </span>
               </div>
 

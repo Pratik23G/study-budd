@@ -31,6 +31,14 @@ export default function ChatPage() {
   const fileInputRef = useRef(null);
   const messagesContainerRef = useRef(null);
 
+  // Delete confirmation modal
+  const [deletePendingId, setDeletePendingId] = useState(null);
+
+  // Thread row menu (3-dot) and rename
+  const [threadMenuId, setThreadMenuId] = useState(null);
+  const [renameId, setRenameId] = useState(null);
+  const [renameValue, setRenameValue] = useState("");
+
   // Whether this is a fresh new conversation (no user messages yet)
   const isNewConversation = !activeId && messages.every((m) => m.role === "assistant" && m.content === "What are you studying today?");
 
@@ -75,6 +83,72 @@ export default function ChatPage() {
       setThreads(res.data);
     } catch (err) {
       console.error("Failed to load threads:", err);
+    }
+  }
+
+  function openDeleteConfirm(e, conversationId) {
+    e.stopPropagation();
+    setDeletePendingId(conversationId);
+  }
+
+  function closeDeleteConfirm() {
+    setDeletePendingId(null);
+  }
+
+  function openThreadMenu(e, conversationId) {
+    e.stopPropagation();
+    setThreadMenuId((prev) => (prev === conversationId ? null : conversationId));
+  }
+
+  function closeThreadMenu() {
+    setThreadMenuId(null);
+  }
+
+  function startRename(conversationId, currentTitle) {
+    setRenameId(conversationId);
+    setRenameValue(currentTitle || "");
+    setThreadMenuId(null);
+  }
+
+  function cancelRename() {
+    setRenameId(null);
+    setRenameValue("");
+  }
+
+  async function saveRename() {
+    if (!accessToken || !renameId || renameValue.trim() === "") return;
+    const conversationId = renameId;
+    const newTitle = renameValue.trim() || "Untitled";
+    setRenameId(null);
+    setRenameValue("");
+    try {
+      await axios.patch(
+        `${API_BASE}/chat/conversations/${conversationId}`,
+        { title: newTitle },
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+      setThreads((prev) =>
+        prev.map((t) => (t.id === conversationId ? { ...t, title: newTitle } : t))
+      );
+    } catch (err) {
+      console.error("Failed to rename chat:", err);
+    }
+  }
+
+  async function confirmDeleteChat() {
+    if (!accessToken || !deletePendingId) return;
+    const conversationId = deletePendingId;
+    setDeletePendingId(null);
+    try {
+      await axios.delete(`${API_BASE}/chat/conversations/${conversationId}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      setThreads((prev) => prev.filter((t) => t.id !== conversationId));
+      if (activeId === conversationId) {
+        setActiveId(null);
+      }
+    } catch (err) {
+      console.error("Failed to delete chat:", err);
     }
   }
 
@@ -281,6 +355,26 @@ export default function ChatPage() {
     return () => document.removeEventListener("click", onDocClick);
   }, []);
 
+  // Close thread 3-dot menu on outside click
+  useEffect(() => {
+    function onDocClick(e) {
+      if (e.target?.closest?.("[data-thread-menu]")) return;
+      setThreadMenuId(null);
+    }
+    document.addEventListener("click", onDocClick);
+    return () => document.removeEventListener("click", onDocClick);
+  }, []);
+
+  // Close delete modal on Escape
+  useEffect(() => {
+    if (!deletePendingId) return;
+    function onKeyDown(e) {
+      if (e.key === "Escape") closeDeleteConfirm();
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [deletePendingId]);
+
   function onPickFiles(e) {
     const list = Array.from(e.target.files || []);
     if (!list.length) return;
@@ -293,7 +387,45 @@ export default function ChatPage() {
   // Render
   // ------------------------------------------------------------------
   return (
-    <div className="h-full flex relative overflow-hidden">
+    <div className="h-full min-h-0 flex relative overflow-hidden">
+      {/* Delete confirmation modal */}
+      {deletePendingId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-slate-900/50"
+            onClick={closeDeleteConfirm}
+            aria-hidden="true"
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-dialog-title"
+            className="relative z-10 w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl border border-slate-200"
+          >
+            <h3 id="delete-dialog-title" className="text-lg font-bold text-slate-900 mb-2">
+              Delete this chat?
+            </h3>
+            <p className="text-sm text-slate-600 mb-6">
+              This cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={closeDeleteConfirm}
+                className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteChat}
+                className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Collapsible sidebar (overlay on mobile, inline on lg) ── */}
 
       {/* Backdrop for mobile overlay */}
@@ -311,7 +443,8 @@ export default function ChatPage() {
           flex flex-col bg-white border-r border-slate-200 shadow-xl
           transition-transform duration-200 ease-in-out
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
-          lg:translate-x-0 lg:relative lg:z-auto lg:shadow-none lg:rounded-l-2xl
+          lg:relative lg:z-auto lg:shadow-none lg:rounded-l-2xl
+          ${sidebarOpen ? "lg:translate-x-0" : "lg:w-0 lg:min-w-0 lg:overflow-hidden lg:-translate-x-full lg:border-r-0"}
         `}
       >
         {/* Sidebar header */}
@@ -323,7 +456,7 @@ export default function ChatPage() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setSidebarOpen(false)}
-                className="lg:hidden rounded-lg border border-slate-200 p-1.5 text-slate-500 hover:bg-slate-50"
+                className="rounded-lg border border-slate-200 p-1.5 text-slate-500 hover:bg-slate-50"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                   <path d="M18 6L6 18M6 6l12 12" />
@@ -349,28 +482,103 @@ export default function ChatPage() {
             <ul className="p-2 space-y-1">
               {filteredThreads.map((t) => {
                 const isActive = t.id === activeId;
+                const isRenaming = renameId === t.id;
+                const isMenuOpen = threadMenuId === t.id;
                 return (
                   <li key={t.id}>
-                    <button
-                      onClick={() => {
-                        setActiveId(t.id);
-                        setSidebarOpen(false);
-                      }}
-                      className={`w-full rounded-xl px-3 py-2.5 text-left transition-colors ${
+                    <div
+                      className={`flex items-center gap-2 rounded-xl px-3 py-2.5 transition-colors ${
                         isActive
                           ? "bg-indigo-50 border border-indigo-200"
                           : "hover:bg-slate-50 border border-transparent"
                       }`}
                     >
-                      <p className="font-semibold text-slate-900 truncate text-sm">
-                        {t.title}
-                      </p>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        {new Date(
-                          t.created_at || Date.now()
-                        ).toLocaleDateString()}
-                      </p>
-                    </button>
+                      {isRenaming ? (
+                        <div className="flex-1 min-w-0 flex flex-col gap-2">
+                          <input
+                            value={renameValue}
+                            onChange={(e) => setRenameValue(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") saveRename();
+                              if (e.key === "Escape") cancelRename();
+                            }}
+                            className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
+                            placeholder="Chat name"
+                            autoFocus
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={cancelRename}
+                              className="rounded-lg px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={saveRename}
+                              className="rounded-lg px-2 py-1 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700"
+                            >
+                              Save
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => {
+                              setActiveId(t.id);
+                              setSidebarOpen(false);
+                            }}
+                            className="flex-1 min-w-0 text-left"
+                          >
+                            <p className="font-semibold text-slate-900 truncate text-sm">
+                              {t.title}
+                            </p>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                              {new Date(
+                                t.created_at || Date.now()
+                              ).toLocaleDateString()}
+                            </p>
+                          </button>
+                          <div className="relative shrink-0" data-thread-menu>
+                            <button
+                              onClick={(e) => openThreadMenu(e, t.id)}
+                              title="More actions"
+                              className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:ring-inset"
+                              aria-label="More actions"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                <circle cx="12" cy="6" r="1.5" />
+                                <circle cx="12" cy="12" r="1.5" />
+                                <circle cx="12" cy="18" r="1.5" />
+                              </svg>
+                            </button>
+                            {isMenuOpen && (
+                              <div className="absolute right-0 top-full mt-1 z-10 w-40 rounded-xl border border-slate-200 bg-white shadow-lg py-1">
+                                <button
+                                  type="button"
+                                  onClick={() => startRename(t.id, t.title)}
+                                  className="w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                                >
+                                  Rename
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    openDeleteConfirm(e, t.id);
+                                    closeThreadMenu();
+                                  }}
+                                  className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </li>
                 );
               })}
@@ -391,6 +599,22 @@ export default function ChatPage() {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <path d="M4 6h16M4 12h16M4 18h16" />
             </svg>
+          </button>
+          <button
+            onClick={() => setSidebarOpen((o) => !o)}
+            className="hidden lg:inline-flex rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50 transition-colors"
+            title={sidebarOpen ? "Hide chat history" : "Show chat history"}
+            aria-label={sidebarOpen ? "Hide chat history" : "Show chat history"}
+          >
+            {sidebarOpen ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+              </svg>
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            )}
           </button>
           <div className="flex-1 min-w-0">
             <h2 className="text-sm font-extrabold text-slate-900 truncate">

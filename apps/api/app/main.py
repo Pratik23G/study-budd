@@ -14,6 +14,7 @@ from supabase import create_client, Client
 from app.core.config import get_settings
 from app.documents.router import router as documents_router
 from app.chat.router import router as chat_router
+from app.processing.router import router as processing_router
 
 load_dotenv()
 
@@ -94,7 +95,10 @@ async def log_requests(request: Request, call_next):
 app.include_router(documents_router, prefix="/api")
 
 # The router itself has prefix="/chat", so mounting it at "/api" results in "/api/chat"
-app.include_router(chat_router, prefix="/api") 
+app.include_router(chat_router, prefix="/api")
+
+# Processing router (RAG: chunking, embeddings, query)
+app.include_router(processing_router, prefix="/api")
 
 # --- 5. Data Models (Legacy/Auth) ---
 

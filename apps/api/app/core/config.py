@@ -3,22 +3,26 @@
 import re
 from functools import lru_cache
 from pathlib import Path
-from urllib.parse import quote_plus
+from urllib.parse import quote_plus, urlparse, urlunparse
 
 from pydantic import AliasChoices, Field, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# Find .env file - check multiple locations
+# Find .env file - prefer monorepo root (parent of "apps") so Alembic and CLI use same env
 def _find_env_file() -> Path | None:
-    """Find .env file in project root or api directory."""
-    # Start from this file's location and go up to find .env
+    """Find .env file; prefer project root (parent of apps/) so it's used consistently."""
     current = Path(__file__).resolve().parent
-    for _ in range(5):  # Go up to 5 levels
+    root_env: Path | None = None
+    for _ in range(6):
         env_path = current / ".env"
         if env_path.exists():
-            return env_path
+            # Prefer directory that contains "apps" (monorepo root)
+            if (current / "apps").is_dir():
+                return env_path
+            if root_env is None:
+                root_env = env_path
         current = current.parent
-    return None
+    return root_env
 
 _env_file = _find_env_file()
 
@@ -68,6 +72,11 @@ class Settings(BaseSettings):
         default="postgres", 
         validation_alias=AliasChoices("DB_NAME", "db_name")
     )
+    # Optional: use a different host for migrations (e.g. Supabase direct connection)
+    db_migration_host: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("DB_MIGRATION_HOST", "db_migration_host"),
+    )
 
     @computed_field
     @property
@@ -95,6 +104,28 @@ class Settings(BaseSettings):
         encoded_password = quote_plus(self.db_password)
         return f"postgresql+asyncpg://{self.db_user}:{encoded_password}@{self.db_host}:{self.db_port}/{self.db_name}"
 
+    @computed_field
+    @property
+    def migration_database_url(self) -> str:
+        """URL for migrations. Uses DB_MIGRATION_HOST if set (e.g. Supabase direct), else database_url."""
+        migration_host = (self.db_migration_host or "").strip()
+        if not migration_host:
+            return self.database_url
+        # When DATABASE_URL is set, replace only the host so credentials/port/db stay correct
+        if self.database_url_raw:
+            url = self.database_url
+            parsed = urlparse(url)
+            if "@" in parsed.netloc:
+                userinfo, hostport = parsed.netloc.rsplit("@", 1)
+                port = "5432"
+                if ":" in hostport:
+                    _, port = hostport.rsplit(":", 1)
+                new_netloc = f"{userinfo}@{migration_host}:{port}"
+                return urlunparse(parsed._replace(netloc=new_netloc))
+        # Build from components
+        encoded_password = quote_plus(self.db_password)
+        return f"postgresql+asyncpg://{self.db_user}:{encoded_password}@{migration_host}:{self.db_port}/{self.db_name}"
+
     # Security
     secret_key: str = "change-me-in-production"
 
@@ -120,6 +151,10 @@ class Settings(BaseSettings):
     together_temperature: float = Field(
         default=0.7,
         validation_alias=AliasChoices("TOGETHER_TEMPERATURE", "together_temperature")
+    )
+    together_embed_model: str = Field(
+        default="BAAI/bge-base-en-v1.5",
+        validation_alias=AliasChoices("TOGETHER_EMBED_MODEL", "together_embed_model")
     )
 
     # Upload limits
