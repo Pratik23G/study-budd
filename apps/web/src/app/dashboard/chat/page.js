@@ -8,7 +8,7 @@ import rehypeHighlight from "rehype-highlight";
 import "highlight.js/styles/github.min.css";
 import { createSupabaseBrowser } from "../../../lib/supabase/client";
 
-const API_BASE = "http://localhost:8000/api";
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000") + "/api";
 
 export default function ChatPage() {
   // --- State: Data ---

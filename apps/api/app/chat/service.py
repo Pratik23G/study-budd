@@ -1,32 +1,13 @@
+import asyncio
 import json
 import logging
-import os
 from typing import AsyncGenerator
-from supabase import Client, create_client
 
 logger = logging.getLogger(__name__)
 from .schemas import ChatRequest, ChatResponse, MessageResponse
 from fastapi import HTTPException
 from datetime import datetime
-from dotenv import load_dotenv
-
-# Load env
-load_dotenv()
-
-# --- Supabase Setup ---
-url = os.environ.get("SUPABASE_URL")
-key = (
-    os.environ.get("SUPABASE_SERVICE_KEY") or
-    os.environ.get("SUPABASE_KEY") or
-    os.environ.get("NEXT_PUBLIC_SUPABASE_ANON_KEY")
-)
-
-if not url or not key:
-    logger.error("Supabase URL or KEY is missing in chat/service.py")
-else:
-    logger.info("Supabase connected")
-
-supabase: Client = create_client(url, key)
+from app.core.supabase import get_supabase_client
 
 # --- LLM Client (lazy init) ---
 _llm = None
@@ -53,7 +34,10 @@ class ChatService:
             "user_id": user_id,
             "title": title
         }
-        res = supabase.table("conversations").insert(data).execute()
+        supabase = get_supabase_client()
+        res = await asyncio.to_thread(
+            supabase.table("conversations").insert(data).execute
+        )
         conv = res.data[0]
         logger.info("conversation created user_id=%s conversation_id=%s", user_id, conv["id"])
         return conv
@@ -64,12 +48,15 @@ class ChatService:
         Verifies the conversation belongs to the requesting user before
         returning messages.
         """
+        supabase = get_supabase_client()
         # Ownership check: ensure the conversation belongs to this user
-        conv_res = supabase.table("conversations")\
-            .select("id")\
-            .eq("id", conversation_id)\
-            .eq("user_id", user_id)\
-            .execute()
+        conv_res = await asyncio.to_thread(
+            supabase.table("conversations")
+            .select("id")
+            .eq("id", conversation_id)
+            .eq("user_id", user_id)
+            .execute
+        )
 
         if not conv_res.data:
             raise HTTPException(
@@ -77,24 +64,29 @@ class ChatService:
                 detail="Conversation not found",
             )
 
-        res = supabase.table("messages")\
-            .select("*")\
-            .eq("conversation_id", conversation_id)\
-            .order("created_at")\
-            .execute()
+        res = await asyncio.to_thread(
+            supabase.table("messages")
+            .select("*")
+            .eq("conversation_id", conversation_id)
+            .order("created_at")
+            .execute
+        )
         return res.data
 
-    def _build_history(self, conversation_id: str) -> list[dict]:
+    async def _build_history(self, conversation_id: str) -> list[dict]:
         """
         Fetch recent messages and convert to the format expected by the LLM:
         [{"role": "user"|"assistant", "content": "..."}]
         """
-        res = supabase.table("messages")\
-            .select("role, content")\
-            .eq("conversation_id", conversation_id)\
-            .order("created_at")\
-            .limit(MAX_HISTORY_MESSAGES)\
-            .execute()
+        supabase = get_supabase_client()
+        res = await asyncio.to_thread(
+            supabase.table("messages")
+            .select("role, content")
+            .eq("conversation_id", conversation_id)
+            .order("created_at")
+            .limit(MAX_HISTORY_MESSAGES)
+            .execute
+        )
 
         return [
             {"role": msg["role"], "content": msg["content"]}
@@ -125,10 +117,13 @@ class ChatService:
             "role": "user",
             "content": request.message
         }
-        supabase.table("messages").insert(user_msg_data).execute()
+        supabase = get_supabase_client()
+        await asyncio.to_thread(
+            supabase.table("messages").insert(user_msg_data).execute
+        )
 
         # 3. Build conversation history (all saved messages so far, including the one we just inserted)
-        history = self._build_history(conversation_id)
+        history = await self._build_history(conversation_id)
 
         # 4. Call Together AI
         #    We pass history WITHOUT the latest user msg, because the client appends it.
@@ -159,14 +154,19 @@ class ChatService:
             "content": ai_response_text,
             "sources": sources
         }
-        ai_res = supabase.table("messages").insert(ai_msg_data).execute()
+        supabase = get_supabase_client()
+        ai_res = await asyncio.to_thread(
+            supabase.table("messages").insert(ai_msg_data).execute
+        )
         ai_msg_record = ai_res.data[0]
 
         # 6. Update conversation timestamp
-        supabase.table("conversations")\
-            .update({"updated_at": datetime.utcnow().isoformat()})\
-            .eq("id", conversation_id)\
-            .execute()
+        await asyncio.to_thread(
+            supabase.table("conversations")
+            .update({"updated_at": datetime.utcnow().isoformat()})
+            .eq("id", conversation_id)
+            .execute
+        )
 
         return ChatResponse(
             conversation_id=conversation_id,
@@ -207,10 +207,13 @@ class ChatService:
             "role": "user",
             "content": request.message,
         }
-        supabase.table("messages").insert(user_msg_data).execute()
+        _supabase = get_supabase_client()
+        await asyncio.to_thread(
+            _supabase.table("messages").insert(user_msg_data).execute
+        )
 
         # 3. Build history (pop latest user msg; the LLM client re-appends it)
-        history = self._build_history(conversation_id)
+        history = await self._build_history(conversation_id)
         history_without_latest = history[:-1] if history else []
 
         # 4. Stream tokens from the LLM
@@ -239,14 +242,19 @@ class ChatService:
             "content": accumulated_text,
             "sources": [],
         }
-        ai_res = supabase.table("messages").insert(ai_msg_data).execute()
+        _supabase = get_supabase_client()
+        ai_res = await asyncio.to_thread(
+            _supabase.table("messages").insert(ai_msg_data).execute
+        )
         ai_msg_record = ai_res.data[0]
 
         # 6. Update conversation timestamp
-        supabase.table("conversations") \
-            .update({"updated_at": datetime.utcnow().isoformat()}) \
-            .eq("id", conversation_id) \
-            .execute()
+        await asyncio.to_thread(
+            _supabase.table("conversations")
+            .update({"updated_at": datetime.utcnow().isoformat()})
+            .eq("id", conversation_id)
+            .execute
+        )
 
         # 7. Yield final metadata event
         done_payload = json.dumps({

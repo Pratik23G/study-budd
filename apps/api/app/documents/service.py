@@ -167,8 +167,13 @@ class DocumentService:
         # Delete RAG processing data (chunks cascade from processing_documents)
         await db.execute(delete(ProcessingDocument).where(ProcessingDocument.id == doc_id))
 
-        # Delete from Supabase Storage (ignore failures)
-        delete_file(document.storage_path)
+        # Delete from Supabase Storage
+        if not delete_file(document.storage_path):
+            logger.warning(
+                "storage deletion failed — orphaned file document_id=%s path=%s",
+                doc_id,
+                document.storage_path,
+            )
 
         # Delete from database
         await db.delete(document)
