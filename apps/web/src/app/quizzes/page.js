@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import QUIZ from "../data/dsaQuiz.json";
-import { usePomodoro } from "../../components/PomodoroProvider";
+import { usePomodoro } from "../components/PomodoroProvider";
 
 // ─── Explanation map ───────────────────────────────────────────────────────────
 // Keys = question id from your dsaQuiz.json
