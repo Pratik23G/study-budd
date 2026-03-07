@@ -4,15 +4,30 @@ import { useQuizState } from "./hooks/useQuizState";
 import QuizStyles from "./components/QuizStyles";
 import QuizView from "./components/QuizView";
 import ResultsView from "./components/ResultsView";
+import QuizSetSwitcher from "./components/QuizSetSwitcher";
+import GenerateQuizModal from "./components/GenerateQuizModal";
+import StudyAIPanel from "../../components/StudyAIPanel";
 
-export default function QuizPage({ quiz }) {
-  const state = useQuizState(quiz);
+export default function QuizPage() {
+  const state = useQuizState();
   const {
-    view, q, currentIndex, cardKey, pickedForCurrent, hasAnswered,
+    quizSets, activeSetId, setActiveSetId, quizTitle, pageLoading,
+    questions, view, q, currentIndex, cardKey, pickedForCurrent, hasAnswered,
     isFirst, isLast, score, progressPct, breakdown, shakeRef,
     mm, ss, isRunning, mode, modeLabel,
     startQuizPomodoro, selectAnswer, goNext, goBack, resetQuiz, pause,
+    handleGenerate, handleDeleteSet, fetchFolders,
+    showGenerate, setShowGenerate, folders,
+    showAIPanel, setShowAIPanel,
   } = state;
+
+  if (pageLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -24,43 +39,80 @@ export default function QuizPage({ quiz }) {
           {/* Header */}
           <div className="qz-header">
             <div>
-              <h1 className="qz-title">{quiz.title ?? "Quiz"}</h1>
+              <h1 className="qz-title">{quizTitle}</h1>
               <p className="qz-subtitle">
-                {view === "quiz"
-                  ? `${quiz.questions.length} questions \u00B7 answer to unlock explanation`
-                  : "Session complete \u00B7 review your answers below"}
+                {view === "quiz" && questions.length
+                  ? `${questions.length} questions \u00B7 answer to unlock explanation`
+                  : view === "results"
+                  ? "Session complete \u00B7 review your answers below"
+                  : "Generate a quiz from your documents"}
               </p>
+
+              <QuizSetSwitcher
+                quizSets={quizSets}
+                activeSetId={activeSetId}
+                setActiveSetId={setActiveSetId}
+                onDelete={handleDeleteSet}
+              />
             </div>
 
-            <div className="qz-timer">
-              <div className="qz-timer-mode">{modeLabel}</div>
-              <div className="qz-timer-digits">
-                {String(mm).padStart(2, "0")}:{String(ss).padStart(2, "0")}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
+              <div style={{ display: "flex", gap: 6 }}>
+                <button
+                  className="qz-tbtn"
+                  style={{ background: "linear-gradient(135deg, #2563eb, #7c3aed)", color: "#fff", padding: "6px 14px", borderRadius: 10, border: "none", fontFamily: "Sora, sans-serif", cursor: "pointer" }}
+                  onClick={() => { fetchFolders(); setShowGenerate(true); }}
+                >
+                  + Generate
+                </button>
+                {activeSetId && (
+                  <button
+                    className="qz-tbtn"
+                    style={{ background: "rgba(239,68,68,0.15)", color: "#f87171", padding: "6px 14px", borderRadius: 10, border: "1px solid rgba(239,68,68,0.3)", fontFamily: "Sora, sans-serif", cursor: "pointer" }}
+                    onClick={() => handleDeleteSet(activeSetId)}
+                  >
+                    Delete
+                  </button>
+                )}
               </div>
-              <div className="qz-timer-btns">
-                <button
-                  type="button" className="qz-tbtn"
-                  style={{ background: "#1d4ed8", color: "#fff" }}
-                  onClick={startQuizPomodoro}
-                  disabled={isRunning && mode === "focus"}
-                >
-                  Focus 25m
-                </button>
-                <button
-                  type="button" className="qz-tbtn"
-                  style={{ background: "rgba(255,255,255,0.07)", color: "#64748b" }}
-                  onClick={pause}
-                >
-                  Pause
-                </button>
+
+              <div className="qz-timer">
+                <div className="qz-timer-mode">{modeLabel}</div>
+                <div className="qz-timer-digits">
+                  {String(mm).padStart(2, "0")}:{String(ss).padStart(2, "0")}
+                </div>
+                <div className="qz-timer-btns">
+                  <button type="button" className="qz-tbtn" style={{ background: "#1d4ed8", color: "#fff" }} onClick={startQuizPomodoro} disabled={isRunning && mode === "focus"}>Focus 25m</button>
+                  <button type="button" className="qz-tbtn" style={{ background: "rgba(255,255,255,0.07)", color: "#64748b" }} onClick={pause}>Pause</button>
+                </div>
               </div>
             </div>
           </div>
 
+          {/* Empty state */}
+          {!questions.length && view === "quiz" && (
+            <div className="qz-card" style={{ textAlign: "center", padding: "3rem 2rem" }}>
+              <div style={{ fontSize: "2.5rem", marginBottom: 12 }}>📝</div>
+              <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "#f1f5f9", marginBottom: 8 }}>
+                {quizSets.length ? "Select a quiz set above" : "No quizzes yet"}
+              </div>
+              <div style={{ fontSize: "0.85rem", color: "#64748b", marginBottom: 20 }}>
+                Generate quiz questions from your uploaded study materials.
+              </div>
+              <button
+                className="qz-tbtn"
+                style={{ background: "linear-gradient(135deg, #2563eb, #7c3aed)", color: "#fff", padding: "10px 24px", borderRadius: 12, fontSize: "0.85rem", border: "none", fontFamily: "Sora, sans-serif", cursor: "pointer" }}
+                onClick={() => { fetchFolders(); setShowGenerate(true); }}
+              >
+                + Generate Quiz
+              </button>
+            </div>
+          )}
+
           {/* Quiz view */}
           {view === "quiz" && q && (
             <QuizView
-              quiz={quiz}
+              questions={questions}
               q={q}
               currentIndex={currentIndex}
               cardKey={cardKey}
@@ -79,7 +131,7 @@ export default function QuizPage({ quiz }) {
           {/* Results view */}
           {view === "results" && (
             <ResultsView
-              quiz={quiz}
+              questions={questions}
               score={score}
               breakdown={breakdown}
               resetQuiz={resetQuiz}
@@ -88,6 +140,14 @@ export default function QuizPage({ quiz }) {
 
         </div>
       </div>
+
+      {showGenerate && (
+        <GenerateQuizModal
+          folders={folders}
+          onGenerate={handleGenerate}
+          onClose={() => setShowGenerate(false)}
+        />
+      )}
     </>
   );
 }

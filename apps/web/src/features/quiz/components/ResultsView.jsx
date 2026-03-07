@@ -1,5 +1,4 @@
 import ProgressRing from "./ProgressRing";
-import { getExplanation } from "../constants/explanations";
 
 function ScoreGauge({ score, total }) {
   const pct = total ? Math.round((score / total) * 100) : 0;
@@ -10,7 +9,7 @@ function ScoreGauge({ score, total }) {
       <div style={{ position: "relative", display: "inline-flex" }}>
         <ProgressRing pct={pct} size={128} stroke={10} color={color} />
         <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ fontSize: "1.7rem", fontWeight: 700, color, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1 }}>{pct}%</div>
+          <div style={{ fontSize: "1.7rem", fontWeight: 800, color, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1 }}>{pct}%</div>
           <div style={{ fontSize: "0.7rem", color: "#64748b", fontWeight: 600, marginTop: 2 }}>{score}/{total}</div>
         </div>
       </div>
@@ -19,37 +18,43 @@ function ScoreGauge({ score, total }) {
   );
 }
 
-export default function ResultsView({ quiz, score, breakdown, resetQuiz }) {
+export default function ResultsView({ questions, score, breakdown, resetQuiz }) {
   return (
     <div className="qz-results">
       <h2 className="qz-results-title">Session Complete</h2>
-      <ScoreGauge score={score} total={quiz.questions.length} />
+      <ScoreGauge score={score} total={questions.length} />
 
       <div>
-        {breakdown.map(({ question, picked, correct, ok }, idx) => (
-          <div
-            key={question.id}
-            className="qz-bd-item"
-            style={{
-              borderColor: ok ? "rgba(22,163,74,0.35)" : "rgba(220,38,38,0.35)",
-              background: ok ? "rgba(22,163,74,0.07)" : "rgba(220,38,38,0.07)",
-            }}
-          >
-            <div className="qz-bd-prompt">
-              <span style={{ color: ok ? "#4ade80" : "#f87171", marginRight: 6 }}>{ok ? "\u2713" : "\u2717"}</span>
-              Q{idx + 1}: {question.prompt}
-            </div>
-            <div className="qz-bd-ans" style={{ color: ok ? "#86efac" : "#fca5a5" }}>
-              Your answer: {picked !== undefined ? question.options[picked] : <em>No answer</em>}
-            </div>
-            {!ok && (
-              <div className="qz-bd-ans" style={{ color: "#86efac", marginTop: 3 }}>
-                Correct: {question.options[correct]}
+        {breakdown.map(({ question, picked, ok }, idx) => {
+          const pickedText = question.options.find((o) => o.label === picked)?.text || "No answer";
+          const correctText = question.options.find((o) => o.label === question.correct_option)?.text || "";
+          return (
+            <div
+              key={question.id}
+              className="qz-bd-item"
+              style={{
+                borderColor: ok ? "rgba(22,163,74,0.35)" : "rgba(220,38,38,0.35)",
+                background: ok ? "rgba(22,163,74,0.07)" : "rgba(220,38,38,0.07)",
+              }}
+            >
+              <div className="qz-bd-prompt">
+                <span style={{ color: ok ? "#4ade80" : "#f87171", marginRight: 6 }}>{ok ? "\u2713" : "\u2717"}</span>
+                Q{idx + 1}: {question.question}
               </div>
-            )}
-            <div className="qz-bd-expl">{getExplanation(question, picked ?? -1)}</div>
-          </div>
-        ))}
+              <div className="qz-bd-ans" style={{ color: ok ? "#86efac" : "#fca5a5" }}>
+                Your answer: {picked ? `${picked}. ${pickedText}` : <em>No answer</em>}
+              </div>
+              {!ok && (
+                <div className="qz-bd-ans" style={{ color: "#86efac", marginTop: 3 }}>
+                  Correct: {question.correct_option}. {correctText}
+                </div>
+              )}
+              {question.explanation && (
+                <div className="qz-bd-expl">{question.explanation}</div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       <button type="button" className="qz-retry" onClick={resetQuiz}>

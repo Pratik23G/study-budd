@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
-import { getExplanation } from "../constants/explanations";
 
-export default function FeedbackPanel({ question, pickedIndex, onNext, isLast }) {
-  const isCorrect = pickedIndex === question.correctIndex;
-  const explanation = getExplanation(question, pickedIndex);
+export default function FeedbackPanel({ question, pickedLabel, onNext, isLast }) {
+  const isCorrect = pickedLabel === question.correct_option;
+  const correctText = question.options.find((o) => o.label === question.correct_option)?.text || "";
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -14,8 +13,7 @@ export default function FeedbackPanel({ question, pickedIndex, onNext, isLast })
   return (
     <div
       style={{
-        marginTop: "1.25rem",
-        borderRadius: 16,
+        marginTop: "1.25rem", borderRadius: 16,
         border: `1.5px solid ${isCorrect ? "#166534" : "#991b1b"}`,
         background: isCorrect
           ? "linear-gradient(135deg, rgba(20,83,45,0.6) 0%, rgba(21,128,61,0.4) 100%)"
@@ -27,7 +25,6 @@ export default function FeedbackPanel({ question, pickedIndex, onNext, isLast })
         backdropFilter: "blur(8px)",
       }}
     >
-      {/* Verdict row */}
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: "0.85rem" }}>
         <div
           style={{
@@ -43,54 +40,38 @@ export default function FeedbackPanel({ question, pickedIndex, onNext, isLast })
           }
         </div>
         <div>
-          <div style={{ fontSize: "1rem", fontWeight: 700, color: isCorrect ? "#4ade80" : "#f87171" }}>
+          <div style={{ fontSize: "1rem", fontWeight: 800, color: isCorrect ? "#4ade80" : "#f87171" }}>
             {isCorrect ? "Correct!" : "Not quite"}
           </div>
           {!isCorrect && (
             <div style={{ fontSize: "0.78rem", color: "#94a3b8", marginTop: 2 }}>
-              Correct answer: <strong style={{ color: "#86efac" }}>{question.options[question.correctIndex]}</strong>
+              Correct answer: <strong style={{ color: "#86efac" }}>{question.correct_option}. {correctText}</strong>
             </div>
           )}
         </div>
       </div>
 
-      {/* Explanation box */}
-      <div
-        style={{
-          fontSize: "0.875rem", lineHeight: 1.7, color: "#cbd5e1",
-          background: "rgba(0,0,0,0.25)", borderRadius: 10,
-          padding: "0.75rem 1rem", marginBottom: "0.85rem",
-          borderLeft: `3px solid ${isCorrect ? "#22c55e" : "#ef4444"}`,
-        }}
-      >
-        {explanation}
-      </div>
-
-      {/* Tag */}
-      <div style={{ marginBottom: "0.9rem" }}>
-        <span
+      {question.explanation && (
+        <div
           style={{
-            fontSize: "0.7rem", fontWeight: 700, padding: "3px 10px",
-            borderRadius: 99, letterSpacing: "0.04em",
-            background: isCorrect ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)",
-            color: isCorrect ? "#4ade80" : "#f87171",
-            border: `1px solid ${isCorrect ? "rgba(74,222,128,0.3)" : "rgba(248,113,113,0.3)"}`,
+            fontSize: "0.875rem", lineHeight: 1.7, color: "#cbd5e1",
+            background: "rgba(0,0,0,0.25)", borderRadius: 10,
+            padding: "0.75rem 1rem", marginBottom: "0.85rem",
+            borderLeft: `3px solid ${isCorrect ? "#22c55e" : "#ef4444"}`,
           }}
         >
-          {isCorrect ? "\u2713 Concept mastered" : "\u21BB Review recommended"}
-        </span>
-      </div>
+          {question.explanation}
+        </div>
+      )}
 
-      {/* Next CTA */}
       <button
-        type="button"
-        onClick={onNext}
+        type="button" onClick={onNext}
         style={{
           width: "100%", padding: "0.75rem 1rem", borderRadius: 12,
           border: "none", color: "#fff", fontSize: "0.9rem", fontWeight: 700,
           fontFamily: "Sora, sans-serif", cursor: "pointer",
           background: isCorrect ? "#16a34a" : "#2563eb",
-          transition: "all 0.2s", letterSpacing: "0.01em",
+          transition: "all 0.2s",
         }}
         onMouseEnter={e => { e.currentTarget.style.filter = "brightness(1.1)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
         onMouseLeave={e => { e.currentTarget.style.filter = ""; e.currentTarget.style.transform = ""; }}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "highlight.js/styles/github.min.css";
 
 // Hooks
@@ -19,6 +19,16 @@ export default function ChatPage() {
 
   const [activeId, setActiveId] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [selectedModel, setSelectedModel] = useState("Qwen/Qwen3.5-397B-A17B");
+
+  useEffect(() => {
+    const stored = localStorage.getItem("chatModel");
+    if (stored) setSelectedModel(stored);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("chatModel", selectedModel);
+  }, [selectedModel]);
 
   const threadState = useThreads(accessToken);
 
@@ -28,7 +38,7 @@ export default function ChatPage() {
     isNewConversation,
     messagesContainerRef,
     sendMessage,
-  } = useChatMessages(accessToken, activeId, setActiveId, threadState.fetchThreads);
+  } = useChatMessages(accessToken, activeId, setActiveId, threadState.fetchThreads, selectedModel);
 
   function selectThread(id) {
     setActiveId(id);
@@ -171,7 +181,7 @@ export default function ChatPage() {
         </div>
 
         {/* Input */}
-        <ChatInput onSend={sendMessage} isLoading={isLoading} />
+        <ChatInput onSend={sendMessage} isLoading={isLoading} selectedModel={selectedModel} onModelChange={setSelectedModel} />
       </div>
     </div>
   );

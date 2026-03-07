@@ -201,6 +201,29 @@ export default function QuizStyles() {
       }
       .dark .qz-back-btn:hover:not(:disabled) { background: rgba(255,255,255,0.07); color: #94a3b8; }
 
+      /* ── Quiz set pills ── */
+      .qz-set-pill {
+        font-size: 0.72rem; font-weight: 600; padding: 5px 12px;
+        border-radius: 99px; border: 1px solid #e2e8f0;
+        background: #f1f5f9; color: #64748b;
+        cursor: pointer; font-family: 'Sora', sans-serif;
+        transition: all 0.15s ease;
+      }
+      .qz-set-pill:hover { background: #e2e8f0; color: #475569; }
+      .qz-set-pill.active {
+        background: linear-gradient(135deg, #2563eb, #7c3aed);
+        color: #fff; border-color: transparent;
+      }
+      .dark .qz-set-pill {
+        border-color: rgba(255,255,255,0.09);
+        background: rgba(255,255,255,0.04); color: #64748b;
+      }
+      .dark .qz-set-pill:hover { background: rgba(255,255,255,0.08); color: #94a3b8; }
+      .dark .qz-set-pill.active {
+        background: linear-gradient(135deg, #2563eb, #7c3aed);
+        color: #fff; border-color: transparent;
+      }
+
       @media (max-width: 500px) {
         .qz-timer { min-width: unset; width: 100%; text-align: left; }
         .qz-timer-btns { justify-content: flex-start; }
