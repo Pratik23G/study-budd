@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { createSupabaseBrowser } from "../../lib/supabase/client";
 
@@ -33,6 +34,7 @@ function buildContextMessage(userText, context) {
 }
 
 export function StudyAIPanelProvider({ children }) {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [studyContext, setStudyContext] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -45,7 +47,11 @@ export function StudyAIPanelProvider({ children }) {
   useEffect(() => { studyContextRef.current = studyContext; }, [studyContext]);
 
   const togglePanel = useCallback(() => setIsOpen((v) => !v), []);
-  const closePanel = useCallback(() => setIsOpen(false), []);
+  const closePanel = useCallback(() => {
+    setIsOpen(false);
+    setMessages([]);
+    setConversationId(null);
+  }, []);
 
   // ── Auth token ──
   useEffect(() => {
@@ -92,7 +98,7 @@ export function StudyAIPanelProvider({ children }) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({ message: apiPayload, conversation_id: conversationId }),
+        body: JSON.stringify({ message: apiPayload, conversation_id: conversationId, ephemeral: true }),
       });
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -167,6 +173,36 @@ export function StudyAIPanelProvider({ children }) {
     }
   }, [isLoading, accessToken, conversationId]);
 
+  // ── Save ephemeral chat to main Chat ──
+  const saveToChat = useCallback(async () => {
+    if (!accessToken || messages.length === 0) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/chat/conversations/save`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          title: messages.find((m) => m.role === "user")?.content?.slice(0, 50) || "Ask AI Chat",
+          messages: messages.map((m) => ({ role: m.role, content: m.content })),
+        }),
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const { conversation_id } = await res.json();
+
+      // Close panel, clear state, navigate to chat
+      setIsOpen(false);
+      setMessages([]);
+      setConversationId(null);
+      router.push(`/dashboard/chat?id=${conversation_id}`);
+    } catch (err) {
+      console.error("saveToChat error:", err);
+    }
+  }, [accessToken, messages, router]);
+
   return (
     <StudyAIPanelContext.Provider
       value={{
@@ -174,7 +210,7 @@ export function StudyAIPanelProvider({ children }) {
         studyContext, setStudyContext,
         messages, conversationId,
         accessToken, isLoading,
-        sendMessage,
+        sendMessage, saveToChat,
       }}
     >
       {children}
@@ -188,7 +224,7 @@ const FALLBACK = {
   studyContext: null, setStudyContext: noop,
   messages: [], conversationId: null,
   accessToken: null, isLoading: false,
-  sendMessage: noop,
+  sendMessage: noop, saveToChat: noop,
 };
 
 export function useStudyAIPanel() {

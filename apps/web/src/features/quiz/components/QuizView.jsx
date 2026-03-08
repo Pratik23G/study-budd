@@ -51,8 +51,16 @@ export default function QuizView({
       </div>
 
       {!hasAnswered && (
-        <button type="button" className="qz-back-btn" disabled={isFirst} onClick={goBack}>
-          &larr; Previous
+        <button
+          type="button"
+          disabled={isFirst}
+          onClick={goBack}
+          className="mt-3 flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm border transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-500 hover:bg-slate-50 dark:hover:bg-slate-600"
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M9 2L4 7l5 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Previous
         </button>
       )}
     </>

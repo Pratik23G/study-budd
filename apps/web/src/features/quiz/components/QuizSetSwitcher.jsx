@@ -1,26 +1,34 @@
 export default function QuizSetSwitcher({ quizSets, activeSetId, setActiveSetId, onDelete }) {
   if (!quizSets.length) return null;
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 12 }}>
-      {quizSets.map((s) => (
-        <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <button
-            className={`qz-set-pill ${s.id === activeSetId ? "active" : ""}`}
-            onClick={() => setActiveSetId(s.id)}
-          >
-            {s.title} ({s.question_count})
-          </button>
-          {s.id === activeSetId && onDelete && (
+    <div className="flex flex-wrap gap-2">
+      {quizSets.map((s) => {
+        const active = s.id === activeSetId;
+        return (
+          <div key={s.id} className="flex items-center gap-1">
             <button
-              onClick={() => onDelete(s.id)}
-              style={{ fontSize: "0.7rem", color: "#f87171", cursor: "pointer", background: "none", border: "none", fontWeight: 700, padding: "2px 4px" }}
-              title="Delete set"
+              onClick={() => setActiveSetId(s.id)}
+              className={`px-3.5 py-1.5 rounded-full text-sm font-semibold border transition-all ${
+                active
+                  ? "text-white border-transparent shadow-md"
+                  : "bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-600"
+              }`}
+              style={active ? { background: "linear-gradient(135deg, #6366f1, #8b5cf6)" } : undefined}
             >
-              x
+              {s.title} ({s.question_count})
             </button>
-          )}
-        </div>
-      ))}
+            {active && onDelete && (
+              <button
+                onClick={() => onDelete(s.id)}
+                className="text-xs text-red-500 hover:text-red-700 font-semibold px-1"
+                title="Delete set"
+              >
+                &times;
+              </button>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

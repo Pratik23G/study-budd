@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+const ACCENT = "#6366f1";
+
 export default function GenerateQuizModal({ folders, onGenerate, onClose }) {
   const [folderId, setFolderId] = useState("");
   const [topic, setTopic] = useState("");
@@ -22,25 +24,19 @@ export default function GenerateQuizModal({ folders, onGenerate, onClose }) {
   }
 
   return (
-    <div
-      style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
-      onClick={() => !generating && onClose()}
-    >
-      <div
-        style={{ background: "#1e2030", borderRadius: 20, border: "1px solid rgba(255,255,255,0.1)", width: "100%", maxWidth: 440, margin: "0 16px", overflow: "hidden" }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div style={{ padding: "20px 24px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-          <h2 style={{ fontSize: "1.1rem", fontWeight: 800, color: "#f8fafc" }}>Generate Quiz</h2>
-          <p style={{ fontSize: "0.8rem", color: "#64748b", marginTop: 4 }}>Create questions from your uploaded documents.</p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => !generating && onClose()}>
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-700">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white">Generate Quiz</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Create questions from your uploaded documents.</p>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
           <div>
-            <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "#94a3b8", marginBottom: 6 }}>Folder (optional)</label>
+            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Folder (optional)</label>
             <select
               value={folderId} onChange={(e) => setFolderId(e.target.value)}
-              style={{ width: "100%", borderRadius: 12, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "#e2e8f0", padding: "10px 12px", fontSize: "0.85rem", fontFamily: "Sora, sans-serif" }}
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
               <option value="">All documents</option>
               {folders.map((f) => (<option key={f.id} value={f.id}>{f.name}</option>))}
@@ -48,23 +44,23 @@ export default function GenerateQuizModal({ folders, onGenerate, onClose }) {
           </div>
 
           <div>
-            <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "#94a3b8", marginBottom: 6 }}>Topic prompt</label>
+            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Topic prompt</label>
             <input
               type="text" value={topic} onChange={(e) => setTopic(e.target.value)}
               placeholder="e.g. Photosynthesis, Chapter 3"
-              style={{ width: "100%", borderRadius: 12, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "#e2e8f0", padding: "10px 12px", fontSize: "0.85rem", fontFamily: "Sora, sans-serif" }}
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
 
           <div>
-            <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "#94a3b8", marginBottom: 6 }}>Questions: {numQuestions}</label>
-            <input type="range" min={3} max={30} value={numQuestions} onChange={(e) => setNumQuestions(Number(e.target.value))} style={{ width: "100%", accentColor: "#3b82f6" }} />
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.7rem", color: "#475569", marginTop: 4 }}><span>3</span><span>30</span></div>
+            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Questions: {numQuestions}</label>
+            <input type="range" min={3} max={30} value={numQuestions} onChange={(e) => setNumQuestions(Number(e.target.value))} className="w-full accent-indigo-600" />
+            <div className="flex justify-between text-xs text-slate-400 mt-1"><span>3</span><span>30</span></div>
           </div>
 
-          <div style={{ display: "flex", gap: 10, paddingTop: 4 }}>
-            <button type="button" onClick={onClose} disabled={generating} className="qz-tbtn" style={{ flex: 1, padding: "10px", borderRadius: 12, background: "rgba(255,255,255,0.06)", color: "#94a3b8", fontSize: "0.85rem", border: "1px solid rgba(255,255,255,0.1)", fontFamily: "Sora, sans-serif", cursor: "pointer" }}>Cancel</button>
-            <button type="submit" disabled={generating} className="qz-tbtn" style={{ flex: 1, padding: "10px", borderRadius: 12, background: "linear-gradient(135deg, #2563eb, #7c3aed)", color: "#fff", fontSize: "0.85rem", opacity: generating ? 0.5 : 1, border: "none", fontFamily: "Sora, sans-serif", cursor: "pointer" }}>
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose} disabled={generating} className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 transition-all">Cancel</button>
+            <button type="submit" disabled={generating} className="flex-1 px-4 py-2.5 rounded-xl text-white text-sm font-semibold disabled:opacity-50 transition-all hover:opacity-90" style={{ background: ACCENT }}>
               {generating ? "Generating..." : "Generate"}
             </button>
           </div>

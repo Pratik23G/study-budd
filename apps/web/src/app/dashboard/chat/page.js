@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import "highlight.js/styles/github.min.css";
 
 // Hooks
@@ -15,11 +16,26 @@ import MessageBubble from "./components/MessageBubble";
 import DeleteConfirmModal from "./components/DeleteConfirmModal";
 
 export default function ChatPage() {
+  return (
+    <Suspense>
+      <ChatPageInner />
+    </Suspense>
+  );
+}
+
+function ChatPageInner() {
   const accessToken = useAuth();
+  const searchParams = useSearchParams();
 
   const [activeId, setActiveId] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState("Qwen/Qwen3.5-397B-A17B");
+
+  // Open conversation from query param (e.g. ?id=xxx from "Continue in Chat")
+  useEffect(() => {
+    const id = searchParams.get("id");
+    if (id) setActiveId(id);
+  }, [searchParams]);
 
   useEffect(() => {
     const stored = localStorage.getItem("chatModel");

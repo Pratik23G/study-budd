@@ -14,7 +14,7 @@ export default function StudyAIPanel({ accentColor = "#6366f1" }) {
     isOpen, closePanel,
     studyContext: context,
     messages, isLoading, accessToken,
-    sendMessage,
+    sendMessage, saveToChat,
   } = useStudyAIPanel();
 
   const [input, setInput] = useState("");
@@ -413,6 +413,34 @@ export default function StudyAIPanel({ accentColor = "#6366f1" }) {
             <div style={{ marginTop: 6, fontSize: "0.63rem", color: c.footerText, textAlign: "center" }}>
               {footerHint} · Enter to send
             </div>
+
+            {messages.length > 0 && !isLoading && (
+              <button
+                type="button"
+                onClick={saveToChat}
+                style={{
+                  width: "100%", marginTop: 8, padding: "7px 0",
+                  borderRadius: 9, border: `1px solid ${c.inputBorder}`,
+                  background: "transparent", color: c.textMuted,
+                  fontSize: "0.72rem", fontWeight: 600, fontFamily: "inherit",
+                  cursor: "pointer", transition: "all 0.15s",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = accentColor;
+                  e.currentTarget.style.color = accentColor;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = c.inputBorder;
+                  e.currentTarget.style.color = c.textMuted;
+                }}
+              >
+                <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                </svg>
+                Continue in Chat
+              </button>
+            )}
           </div>
         </div>
       </div>

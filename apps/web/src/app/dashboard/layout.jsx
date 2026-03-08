@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { FolderOpen, MessageSquare, Brain, Layers, ChevronRight } from "lucide-react";
 
 import { PomodoroProvider } from "../components/PomodoroProvider";
 import PomodoroSidebarCard from "../components/PomodoroSidebarCard";
@@ -10,10 +11,10 @@ import { StudyAIPanelProvider, useStudyAIPanel } from "../components/StudyAIPane
 import StudyAIPanel from "../../components/StudyAIPanel";
 
 const NAV = [
-  { href: "/dashboard/files", label: "Files", desc: "Your study library", icon: "📁" },
-  { href: "/dashboard/chat", label: "Chat", desc: "Ask & revisit answers", icon: "💬" },
-  { href: "/dashboard/quizzes", label: "Quizzes", desc: "Practice by topic", icon: "🧠" },
-  { href: "/dashboard/flashcards", label: "Flashcards", desc: "Spaced repetition", icon: "🃏" },
+  { href: "/dashboard/files", label: "Files", desc: "Your study library", icon: FolderOpen },
+  { href: "/dashboard/chat", label: "Chat", desc: "Ask & revisit answers", icon: MessageSquare },
+  { href: "/dashboard/quizzes", label: "Quizzes", desc: "Practice by topic", icon: Brain },
+  { href: "/dashboard/flashcards", label: "Flashcards", desc: "Spaced repetition", icon: Layers },
 ];
 
 export default function DashboardLayout({ children }) {
@@ -57,6 +58,7 @@ function DashboardLayoutInner({ children }) {
               <nav className="space-y-2">
                 {NAV.map((item) => {
                   const active = pathname?.startsWith(item.href);
+                  const Icon = item.icon;
                   return (
                     <Link
                       key={item.href}
@@ -69,7 +71,7 @@ function DashboardLayoutInner({ children }) {
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <span className="text-lg">{item.icon}</span>
+                          <Icon className="w-5 h-5" />
                           <div>
                             <p className="font-bold">{item.label}</p>
                             <p
@@ -81,13 +83,11 @@ function DashboardLayoutInner({ children }) {
                             </p>
                           </div>
                         </div>
-                        <span
-                          className={`${
+                        <ChevronRight
+                          className={`w-4 h-4 ${
                             active ? "text-white/90" : "text-slate-400 dark:text-slate-500"
-                          } font-bold`}
-                        >
-                          →
-                        </span>
+                          }`}
+                        />
                       </div>
                     </Link>
                   );

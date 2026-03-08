@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { Timer, FolderOpen, MessageSquare, Brain, Layers } from "lucide-react";
 import { createSupabaseBrowser } from "../../lib/supabase/client";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -229,30 +230,34 @@ export default function DashboardHome() {
         <h3 className="text-xl font-bold text-slate-900 dark:text-white">Your tools</h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          <ToolCard title="Pomodoro" desc="Focus sessions + streaks" href="/dashboard" pill="Free: 3/day" />
+          <ToolCard title="Pomodoro" desc="Focus sessions + streaks" href="/dashboard" pill="Free: 3/day" icon={Timer} />
           <ToolCard
             title="Files"
             desc="Upload notes, prep sheets"
             href="/dashboard/files"
             pill={loading ? "..." : stats.fileCount > 0 ? `${stats.fileCount} file${stats.fileCount !== 1 ? "s" : ""}` : "Upload"}
+            icon={FolderOpen}
           />
           <ToolCard
             title="Chat"
             desc="Ask, summarize, plan"
             href="/dashboard/chat"
             pill={loading ? "..." : stats.chatCount > 0 ? `${stats.chatCount} thread${stats.chatCount !== 1 ? "s" : ""}` : "Start"}
+            icon={MessageSquare}
           />
           <ToolCard
             title="Quizzes"
             desc="Generate & practice"
             href="/dashboard/quizzes"
             pill={loading ? "..." : stats.quizCount > 0 ? `${stats.quizCount} set${stats.quizCount !== 1 ? "s" : ""}` : "New"}
+            icon={Brain}
           />
           <ToolCard
             title="Flashcards"
             desc="Create and review flashcards"
             href="/dashboard/flashcards"
             pill={loading ? "..." : stats.flashcardCount > 0 ? `${stats.flashcardCount} set${stats.flashcardCount !== 1 ? "s" : ""}` : "New"}
+            icon={Layers}
           />
         </div>
       </section>
@@ -288,14 +293,17 @@ export default function DashboardHome() {
   );
 }
 
-function ToolCard({ title, desc, href, pill }) {
+function ToolCard({ title, desc, href, pill, icon: Icon }) {
   return (
     <Link
       href={href}
       className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm hover:shadow-md transition"
     >
       <div className="flex items-center justify-between gap-3">
-        <div className="font-bold text-slate-900 dark:text-white">{title}</div>
+        <div className="flex items-center gap-2">
+          {Icon && <Icon className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />}
+          <div className="font-bold text-slate-900 dark:text-white">{title}</div>
+        </div>
         <div className="text-xs font-bold px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
           {pill}
         </div>

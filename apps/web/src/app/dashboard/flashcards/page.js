@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
+import { BookOpen } from "lucide-react";
 import { useFlashcardNav } from "./hooks/useFlashcardNav";
 import { TABS } from "./constants/flashcards";
 import FlashcardStyles from "./components/FlashcardStyles";
@@ -99,7 +100,7 @@ export default function FlashcardsPage() {
         {/* Main content */}
         {!decks.length ? (
           <div className="rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 p-12 text-center">
-            <div className="text-4xl mb-3">📚</div>
+            <BookOpen className="w-10 h-10 mx-auto mb-3 text-slate-400 dark:text-slate-500" />
             <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">No flashcard sets yet</h3>
             <p className="text-slate-500 dark:text-slate-400 mb-5">Generate flashcards from your uploaded documents to start studying.</p>
             <button
