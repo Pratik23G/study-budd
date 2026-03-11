@@ -115,7 +115,6 @@
 - 分享 DTO：`apps/api/app/documents/schemas.py`
 - 分享业务逻辑：`apps/api/app/documents/service.py`
 - 分享路由：`apps/api/app/documents/router.py`
-- 迁移建表：`apps/api/alembic/versions/20260224_000001_add_document_shares_and_profile_policies.py`
 - Storage 下载：`apps/api/app/core/supabase.py`
 
 前端：
@@ -141,7 +140,4 @@
 
 ## 8. 已知环境注意事项
 
-如果本地执行 `alembic upgrade head` 报 `Can't locate revision identified by '20260302_000002'`：
-- 原因：目标数据库 `alembic_version` 已指向一个仓库中不存在的迁移。
-- 结论：这是数据库与代码仓库迁移链不一致，不是分享逻辑代码错误。
-- 处理建议：先向团队同步缺失迁移文件，或在隔离数据库环境中验证迁移链。
+数据库 schema 在本项目中为手动维护（如通过 Supabase SQL Editor），无迁移脚本。
