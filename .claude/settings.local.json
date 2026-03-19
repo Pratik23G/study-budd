@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.venv/bin/uv pip:*)",
+      "Bash(npx next:*)",
+      "Bash(wc:*)",
+      "Bash(npx jest:*)"
+    ]
+  }
+}

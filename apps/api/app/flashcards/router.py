@@ -4,9 +4,12 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
+from app.core.config import get_settings
 from app.core.dependencies import CurrentUser, DbSession
+from app.core.rate_limiter import rate_limiter
+from app.core.token_budget import token_budget
 from app.flashcards.schemas import (
     FlashcardGenerateRequest,
     FlashcardSetResponse,
@@ -24,6 +27,20 @@ async def generate_flashcards(
     db: DbSession,
 ) -> FlashcardSetResponse:
     """Generate a new flashcard set from user documents."""
+    user_id = str(current_user.user_id)
+    settings = get_settings()
+    if not rate_limiter.is_allowed(
+        user_id, "generate", settings.rate_limit_generate_max, settings.rate_limit_generate_window
+    ):
+        raise HTTPException(
+            status_code=429,
+            detail="Generation rate limit exceeded. Please wait before generating more flashcards.",
+        )
+    if not token_budget.check():
+        raise HTTPException(
+            status_code=503,
+            detail="Daily AI usage limit reached. Please try again tomorrow.",
+        )
     return await FlashcardService.generate(
         db=db,
         user_id=current_user.user_id,

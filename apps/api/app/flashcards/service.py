@@ -85,7 +85,7 @@ class FlashcardService:
             db=db,
             user_id=user_id,
             question=topic or "key concepts and important information",
-            top_k=12,
+            top_k=6,
             document_ids=document_ids,
             folder_ids=folder_ids,
         )

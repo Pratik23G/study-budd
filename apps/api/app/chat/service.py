@@ -22,6 +22,7 @@ from app.chat.tools import (
 )
 from app.core.config import get_settings
 from app.core.supabase import get_supabase_client
+from app.core.token_budget import token_budget
 
 logger = logging.getLogger(__name__)
 
@@ -365,9 +366,14 @@ class ChatService:
             accumulated_text = fallback
             yield f"event: token\ndata: {fallback}\n\n"
 
+        # Track token usage: estimate input from messages + output from response
+        estimated_input = sum(len(m.get("content", "")) // 4 for m in messages)
+        estimated_output = len(accumulated_text) // 4
+        token_budget.record(estimated_input + estimated_output)
+
         logger.info(
-            "chat stream completed conversation_id=%s ephemeral=%s response_len=%d sources=%d",
-            conversation_id, ephemeral, len(accumulated_text), len(sources),
+            "chat stream completed conversation_id=%s ephemeral=%s response_len=%d sources=%d budget_remaining=%d",
+            conversation_id, ephemeral, len(accumulated_text), len(sources), token_budget.remaining,
         )
 
         if ephemeral:

@@ -122,6 +122,8 @@ export function useQuizState() {
       body: JSON.stringify(body),
     });
     if (!res.ok) {
+      if (res.status === 429) throw new Error("You've reached the generation limit. Please wait before generating more quizzes.");
+      if (res.status === 503) throw new Error("Daily AI usage limit reached. The service will reset tomorrow.");
       const err = await res.json().catch(() => ({}));
       throw new Error(err.detail || "Generation failed");
     }

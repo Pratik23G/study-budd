@@ -8,6 +8,7 @@ from typing import Any
 from together import AsyncTogether
 
 from app.core.config import get_settings
+from app.core.token_budget import token_budget
 
 from .prompts import SYSTEM_PROMPT
 
@@ -76,7 +77,12 @@ class LLMClient:
             if delta_obj and hasattr(delta_obj, "content") and delta_obj.content:
                 token_count += 1
                 yield delta_obj.content
-        logger.debug("LLM stream completed tokens=%d", token_count)
+
+        # Estimate total tokens (input ~= len(messages)*100 + output tokens)
+        estimated_input = sum(len(m.get("content", "")) // 4 for m in messages)
+        total_estimated = estimated_input + token_count
+        token_budget.record(total_estimated)
+        logger.debug("LLM stream completed tokens=%d budget_remaining=%d", token_count, token_budget.remaining)
 
     async def generate_json(
         self,
@@ -132,10 +138,24 @@ class LLMClient:
 
             last_raw = response.choices[0].message.content
             finish_reason = response.choices[0].finish_reason
-            logger.debug(
-                "LLM JSON generation completed length=%d finish_reason=%s",
-                len(last_raw or ""), finish_reason,
-            )
+
+            # Track token usage from response metadata
+            usage = getattr(response, "usage", None)
+            if usage:
+                total_tokens = getattr(usage, "total_tokens", 0) or 0
+                token_budget.record(total_tokens)
+                logger.debug(
+                    "LLM JSON generation completed length=%d finish_reason=%s tokens=%d budget_remaining=%d",
+                    len(last_raw or ""), finish_reason, total_tokens, token_budget.remaining,
+                )
+            else:
+                # Fallback estimate
+                estimated = len(last_raw or "") // 4 + len(user_prompt) // 4
+                token_budget.record(estimated)
+                logger.debug(
+                    "LLM JSON generation completed length=%d finish_reason=%s estimated_tokens=%d",
+                    len(last_raw or ""), finish_reason, estimated,
+                )
 
             try:
                 return json.loads(last_raw)
