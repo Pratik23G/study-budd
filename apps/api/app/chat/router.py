@@ -4,7 +4,10 @@ from typing import List
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 
+from app.core.config import get_settings
 from app.core.dependencies import CurrentUser, DbSession
+from app.core.rate_limiter import rate_limiter
+from app.core.token_budget import token_budget
 from app.core.supabase import get_supabase_client
 from .schemas import ChatRequest, ChatResponse, ConversationResponse, ConversationUpdate, MessageResponse, SaveConversationRequest
 from .service import ChatService
@@ -14,10 +17,28 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 chat_service = ChatService()
 
 
+def _check_chat_limits(user_id: str) -> None:
+    """Enforce rate limit and token budget for chat endpoints."""
+    settings = get_settings()
+    if not rate_limiter.is_allowed(
+        user_id, "chat", settings.rate_limit_chat_max, settings.rate_limit_chat_window
+    ):
+        raise HTTPException(
+            status_code=429,
+            detail="Rate limit exceeded. Please wait before sending more messages.",
+        )
+    if not token_budget.check():
+        raise HTTPException(
+            status_code=503,
+            detail="Daily AI usage limit reached. Please try again tomorrow.",
+        )
+
+
 @router.post("/", response_model=ChatResponse)
 async def chat(request: ChatRequest, user: CurrentUser):
     """Endpoint to send a message and get an AI response (non-streaming)."""
     user_id = str(user.user_id)
+    _check_chat_limits(user_id)
     logger.debug("chat request user_id=%s conversation_id=%s", user_id, request.conversation_id)
     try:
         response = await chat_service.process_chat(user_id, request)
@@ -35,6 +56,7 @@ async def chat_stream(request: ChatRequest, user: CurrentUser, db: DbSession):
     function calling) when the user asks about their uploaded files.
     """
     user_id = str(user.user_id)
+    _check_chat_limits(user_id)
     logger.info("chat stream started user_id=%s conversation_id=%s", user_id, request.conversation_id)
     return StreamingResponse(
         chat_service.process_chat_stream(user_id, request, db=db),

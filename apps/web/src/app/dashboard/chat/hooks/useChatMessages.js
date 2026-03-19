@@ -3,6 +3,13 @@ import axios from "axios";
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000") + "/api";
 
+function getFriendlyError(status, fallback) {
+  if (status === 429) return "You're sending messages too fast. Please wait a moment before trying again.";
+  if (status === 503) return "Daily AI usage limit reached. The service will reset tomorrow — please try again then.";
+  if (status === 401) return "Your session has expired. Please log in again.";
+  return fallback || "Something went wrong. Please try again.";
+}
+
 const WELCOME_MESSAGE = {
   role: "assistant",
   content: "What are you studying today?",
@@ -54,10 +61,18 @@ export default function useChatMessages(accessToken, activeId, setActiveId, fetc
     }
   }, [messages, isLoading]);
 
+  // Debounce ref to prevent rapid-fire sends
+  const lastSendRef = useRef(0);
+
   // Send message with SSE streaming
   const sendMessage = useCallback(
     async (text) => {
       if (!text.trim()) return;
+
+      // Debounce: ignore sends within 1 second of each other
+      const now = Date.now();
+      if (now - lastSendRef.current < 1000) return;
+      lastSendRef.current = now;
 
       const optimisticMsg = {
         role: "user",
@@ -89,7 +104,7 @@ export default function useChatMessages(accessToken, activeId, setActiveId, fetc
           }),
         });
 
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) throw new Error(getFriendlyError(res.status));
 
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
@@ -156,20 +171,23 @@ export default function useChatMessages(accessToken, activeId, setActiveId, fetc
         }
       } catch (err) {
         console.error("Chat Error:", err);
+        const errorMsg = err.message || "Something went wrong. Please try again.";
         setMessages((prev) => {
           const updated = [...prev];
           const last = updated[updated.length - 1];
           if (last && last.role === "assistant" && !last.content) {
             updated[updated.length - 1] = {
               role: "assistant",
-              content: "Error: Could not connect to backend.",
+              content: errorMsg,
               created_at: new Date().toISOString(),
+              _error: true,
             };
           } else {
             updated.push({
               role: "assistant",
-              content: "Error: Could not connect to backend.",
+              content: errorMsg,
               created_at: new Date().toISOString(),
+              _error: true,
             });
           }
           return updated;

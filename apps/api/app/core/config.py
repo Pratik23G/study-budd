@@ -125,7 +125,7 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("TOGETHER_MODEL", "together_model")
     )
     together_max_tokens: int = Field(
-        default=1024,
+        default=512,
         validation_alias=AliasChoices("TOGETHER_MAX_TOKENS", "together_max_tokens")
     )
     together_temperature: float = Field(
@@ -145,6 +145,30 @@ class Settings(BaseSettings):
 
     # Upload limits
     max_upload_size_mb: int = 10
+
+    # Rate limiting
+    rate_limit_chat_max: int = Field(
+        default=10,
+        validation_alias=AliasChoices("RATE_LIMIT_CHAT_MAX", "rate_limit_chat_max"),
+    )
+    rate_limit_chat_window: int = Field(
+        default=60,
+        validation_alias=AliasChoices("RATE_LIMIT_CHAT_WINDOW", "rate_limit_chat_window"),
+    )
+    rate_limit_generate_max: int = Field(
+        default=3,
+        validation_alias=AliasChoices("RATE_LIMIT_GENERATE_MAX", "rate_limit_generate_max"),
+    )
+    rate_limit_generate_window: int = Field(
+        default=3600,
+        validation_alias=AliasChoices("RATE_LIMIT_GENERATE_WINDOW", "rate_limit_generate_window"),
+    )
+
+    # Daily token budget (total across all users)
+    daily_token_budget: int = Field(
+        default=200_000,
+        validation_alias=AliasChoices("DAILY_TOKEN_BUDGET", "daily_token_budget"),
+    )
 
 
 @lru_cache

@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from supabase import create_client, Client
 
 from app.core.config import get_settings
+from app.core.token_budget import token_budget
 from app.documents.router import router as documents_router
 from app.chat.router import router as chat_router
 from app.processing.router import router as processing_router
@@ -65,6 +66,10 @@ app = FastAPI(
     description="Backend API for StudyBudd application",
     version="0.1.0",
 )
+
+# --- 2b. Initialize token budget from settings ---
+token_budget.daily_limit = get_settings().daily_token_budget
+logger.info("Token budget initialized: %d tokens/day", token_budget.daily_limit)
 
 # --- 3. Middleware ---
 
@@ -128,10 +133,15 @@ async def root() -> dict[str, str]:
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint with DB status."""
+    """Health check endpoint with DB status and token budget."""
     return {
-        "status": "healthy", 
-        "database_connected": supabase is not None
+        "status": "healthy",
+        "database_connected": supabase is not None,
+        "token_budget": {
+            "used": token_budget.used,
+            "remaining": token_budget.remaining,
+            "daily_limit": token_budget.daily_limit,
+        },
     }
 
 @app.post("/api/auth/signup")

@@ -8,15 +8,17 @@ export default function GenerateModal({ folders, onGenerate, onClose, accentColo
   const [topic, setTopic] = useState("");
   const [numCards, setNumCards] = useState(10);
   const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState("");
 
   async function handleSubmit(e) {
     e.preventDefault();
     setGenerating(true);
+    setError("");
     try {
       await onGenerate({ title, folderId, topic, numCards });
       onClose();
     } catch (err) {
-      alert(err.message);
+      setError(err.message);
     } finally {
       setGenerating(false);
     }
@@ -31,6 +33,11 @@ export default function GenerateModal({ folders, onGenerate, onClose, accentColo
         </div>
 
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+          {error && (
+            <div className="px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-sm">
+              {error}
+            </div>
+          )}
           <div>
             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Set name</label>
             <input
