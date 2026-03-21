@@ -160,9 +160,6 @@ export default function Navbar() {
   const isAuthRoute =
     pathname?.startsWith("/login") || pathname?.startsWith("/signup");
 
-  const isDashboardRoute =
-    pathname?.startsWith("/dashboard") || pathname?.startsWith("/account");
-
   /* Close mobile menu on outside click */
   useEffect(() => {
     if (!mobileMenuOpen) return;
@@ -181,10 +178,6 @@ export default function Navbar() {
   }, [pathname]);
 
   /* -------------------- Render -------------------- */
-
-  /* Hide global navbar on dashboard/account — those routes have their own nav */
-  if (isDashboardRoute) return null;
-
   return (
     <header className="sticky top-0 z-50 liquid-header">
       <div className="relative mx-auto max-w-7xl px-2 sm:px-6 pt-3">
