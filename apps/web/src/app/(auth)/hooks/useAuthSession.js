@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowser } from "../../../lib/supabase/client";
 
-export function useAuthSession(redirectTo = "/") {
+export function useAuthSession(redirectTo = "/dashboard") {
   const router = useRouter();
   const [checkingSession, setCheckingSession] = useState(true);
 

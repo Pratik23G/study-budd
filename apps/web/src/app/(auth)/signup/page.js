@@ -11,7 +11,7 @@ import GoogleAuthButton from "../components/GoogleAuthButton";
 
 export default function SignupPage() {
   const router = useRouter();
-  const { checkingSession } = useAuthSession("/");
+  const { checkingSession } = useAuthSession("/dashboard");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -56,7 +56,7 @@ export default function SignupPage() {
       const supabase = createSupabaseBrowser();
       const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) throw error;
-      router.push("/");
+      router.push("/dashboard");
     } catch (err) {
       setError(err?.message || "Signup failed. Please try again.");
     } finally {

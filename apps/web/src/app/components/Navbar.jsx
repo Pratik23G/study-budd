@@ -154,60 +154,58 @@ export default function Navbar() {
     router.refresh?.();
   }
 
-  const navLink = (href, label) => {
-    const active = pathname === href;
-    return (
-      <Link
-        href={href}
-        className={`nav-pill ${active ? "nav-pill--active" : ""}`}
-      >
-        {label}
-      </Link>
-    );
-  };
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const mobileMenuRef = useRef(null);
 
   const isAuthRoute =
     pathname?.startsWith("/login") || pathname?.startsWith("/signup");
 
-  const showTopLinks = !user;
+  /* Close mobile menu on outside click */
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    function handleClick(e) {
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target)) {
+        setMobileMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [mobileMenuOpen]);
+
+  /* Close mobile menu on route change */
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
   /* -------------------- Render -------------------- */
   return (
     <header className="sticky top-0 z-50 liquid-header">
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 pt-3">
+      <div className="relative mx-auto max-w-7xl px-2 sm:px-6 pt-3">
         <div className="liquid-nav rounded-2xl border border-white/10 overflow-visible">
-          <div className="relative flex items-center justify-between px-4 py-3">
+          <div className="relative flex items-center justify-between px-3 sm:px-4 py-3">
 
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-3">
+            <Link href="/" className="flex items-center gap-2 sm:gap-3 shrink-0">
               <Image
                 src="/S.svg"
                 alt="StudyBudd"
-                width={40}
-                height={40}
+                width={32}
+                height={32}
+                className="w-8 h-8 sm:w-10 sm:h-10"
                 priority
               />
               <div className="leading-tight">
-                <div className="text-white font-bold tracking-tight">
+                <div className="text-white font-bold tracking-tight text-sm sm:text-base">
                   StudyBudd
                 </div>
-                <div className="text-xs text-white/70 -mt-0.5">
+                <div className="text-[10px] sm:text-xs text-white/70 -mt-0.5 hidden sm:block">
                   AI Study Companion
                 </div>
               </div>
             </Link>
 
-            {/* Desktop nav (logged out only) */}
-            {showTopLinks && (
-              <nav className="hidden md:flex items-center gap-2">
-                {navLink("/features", "Features")}
-                {navLink("/pricing", "Pricing")}
-                {navLink("/quizzes", "Quizzes")}
-              </nav>
-            )}
-
             {/* Right side */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               {/* Theme toggle */}
               <ThemeToggle />
 
@@ -314,32 +312,55 @@ export default function Navbar() {
                   )}
                 </div>
               ) : (
-                <>
+                <div className="flex items-center gap-1 sm:gap-2">
                   {!isAuthRoute && (
                     <Link
                       href="/login"
-                      className="nav-pill nav-pill--ghost"
+                      className="nav-pill nav-pill--ghost text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
                     >
                       Log in
                     </Link>
                   )}
-                  <Link href="/signup" className="nav-btn nav-btn--light">
+                  <Link href="/signup" className="nav-btn nav-btn--light text-xs sm:text-sm px-2.5 sm:px-4 py-1.5 sm:py-2">
                     Sign up
                   </Link>
-                </>
+                </div>
               )}
               </div>
+
+              {/* Hamburger — logged-out only, ALL screen sizes */}
+              {!loading && !user && (
+                <div ref={mobileMenuRef} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setMobileMenuOpen((v) => !v)}
+                    className="rounded-xl p-1.5 sm:p-2 text-white/70 hover:text-white hover:bg-white/10 transition"
+                    aria-label="Toggle navigation menu"
+                    aria-expanded={mobileMenuOpen}
+                  >
+                    {mobileMenuOpen ? (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                      </svg>
+                    )}
+                  </button>
+
+                  {mobileMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-48 z-[9999] menu-panel rounded-xl border border-white/10 p-2 flex flex-col gap-1">
+                      <Link href="/features" className="menu-item">Features</Link>
+                      <Link href="/pricing" className="menu-item">Pricing</Link>
+                      <Link href="/quizzes" className="menu-item">Quizzes</Link>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Mobile nav (logged out only) */}
-          {!user && (
-            <div className="md:hidden flex items-center gap-2 px-4 pb-3">
-              {navLink("/features", "Features")}
-              {navLink("/pricing", "Pricing")}
-              {navLink("/quizzes", "Quizzes")}
-            </div>
-          )}
         </div>
       </div>
     </header>

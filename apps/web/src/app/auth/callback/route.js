@@ -6,7 +6,7 @@ export async function GET(request) {
   const code = searchParams.get("code");
 
   // Create response that we'll modify with cookies
-  const response = NextResponse.redirect(`${origin}/`);
+  const response = NextResponse.redirect(`${origin}/dashboard`);
 
   if (code) {
     const supabase = createServerClient(

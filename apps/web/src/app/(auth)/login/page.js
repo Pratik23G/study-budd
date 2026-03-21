@@ -27,7 +27,7 @@ export default function LoginPage() {
 
 function LoginContent() {
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirect") || "/";
+  const redirectTo = searchParams.get("redirect") || "/dashboard";
   const { checkingSession } = useAuthSession(redirectTo);
 
   const [email, setEmail] = useState("");
