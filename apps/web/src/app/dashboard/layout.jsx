@@ -42,7 +42,7 @@ function DashboardLayoutInner({ children }) {
         <button
           onClick={togglePanel}
           title="Ask AI"
-          className="fixed bottom-6 right-6 z-40 flex items-center gap-2 pl-4 pr-5 py-3 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95 text-white text-sm font-semibold"
+          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 flex items-center gap-1.5 sm:gap-2 pl-3 pr-4 py-2.5 sm:pl-4 sm:pr-5 sm:py-3 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95 text-white text-xs sm:text-sm font-semibold"
           style={{
             background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
           }}

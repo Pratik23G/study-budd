@@ -170,6 +170,10 @@ export default function StudyAIPanel({ accentColor = "#6366f1" }) {
         .sap-scroll::-webkit-scrollbar-track { background: transparent; }
         .sap-scroll::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.25); border-radius: 4px; }
         .sap-close-btn:hover { opacity: 1 !important; background: rgba(239,68,68,0.08) !important; color: #ef4444 !important; }
+        @media (max-width: 767px) {
+          .sap-close-btn { width: 40px !important; height: 40px !important; border-radius: 10px !important; }
+          .sap-header { padding: 14px 16px !important; }
+        }
         .sap-send-btn:not(:disabled):hover { filter: brightness(1.1); transform: translateY(-1px); }
         .sap-textarea:focus {
           outline: none;
@@ -181,7 +185,7 @@ export default function StudyAIPanel({ accentColor = "#6366f1" }) {
       {/* Mobile overlay backdrop */}
       {isOpen && (
         <div
-          className="md:hidden fixed inset-0 bg-black/40 z-[9998]"
+          className="md:hidden fixed inset-0 bg-black/50 z-[9998] backdrop-blur-sm"
           onClick={closePanel}
         />
       )}
@@ -190,7 +194,7 @@ export default function StudyAIPanel({ accentColor = "#6366f1" }) {
       <div
         className={
           isOpen
-            ? "fixed inset-x-3 bottom-3 top-20 z-[9999] md:relative md:inset-auto md:z-auto md:w-[380px]"
+            ? "fixed inset-x-0 bottom-0 top-16 z-[9999] px-2 pb-2 md:relative md:inset-auto md:z-auto md:w-[380px] md:px-0 md:pb-0"
             : ""
         }
         style={{
@@ -217,6 +221,7 @@ export default function StudyAIPanel({ accentColor = "#6366f1" }) {
         >
           {/* ── Header ── */}
           <div
+            className="sap-header"
             style={{
               display: "flex",
               alignItems: "center",
@@ -254,13 +259,15 @@ export default function StudyAIPanel({ accentColor = "#6366f1" }) {
               onClick={closePanel}
               title="Close panel"
               style={{
-                width: 26, height: 26, borderRadius: 7, border: "none",
+                borderRadius: 9, border: "none",
                 cursor: "pointer", background: c.closeBg, color: c.textMuted,
                 display: "flex", alignItems: "center", justifyContent: "center",
-                opacity: 0.7, transition: "all 0.15s",
+                opacity: 0.8, transition: "all 0.15s",
+                /* Mobile: 40x40 tap target; Desktop: 28x28 */
+                width: 28, height: 28,
               }}
             >
-              <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+              <svg className="w-3.5 h-3.5 md:w-3 md:h-3" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
                 <path d="M1.5 1.5l8 8M9.5 1.5l-8 8" />
               </svg>
             </button>
