@@ -178,20 +178,31 @@ export default function StudyAIPanel({ accentColor = "#6366f1" }) {
         }
       `}</style>
 
-      {/* Outer wrapper — controls width transition */}
+      {/* Mobile overlay backdrop */}
+      {isOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-black/40 z-[9998]"
+          onClick={closePanel}
+        />
+      )}
+
+      {/* Outer wrapper — fixed overlay on mobile, inline side panel on desktop */}
       <div
+        className={
+          isOpen
+            ? "fixed inset-x-3 bottom-3 top-20 z-[9999] md:relative md:inset-auto md:z-auto md:w-[380px]"
+            : ""
+        }
         style={{
-          width: isOpen ? 380 : 0,
-          minWidth: 0,
           flexShrink: 0,
           transition: "width 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-          overflow: "hidden",
+          ...(!isOpen ? { width: 0, minWidth: 0, overflow: "hidden" } : {}),
         }}
       >
-        {/* Inner panel — always 380px, clipped by outer wrapper */}
+        {/* Inner panel */}
         <div
           style={{
-            width: 380,
+            width: "100%",
             height: "100%",
             display: "flex",
             flexDirection: "column",
