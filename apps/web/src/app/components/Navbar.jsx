@@ -272,7 +272,7 @@ export default function Navbar() {
                   {menuOpen && (
                     <div
                       role="menu"
-                      className="menu-panel absolute right-0 mt-2 w-64 z-[9999]"
+                      className="menu-panel absolute right-0 mt-2 w-56 sm:w-64 z-[9999]"
                     >
                       <div className="px-3 py-2 text-xs text-white/70 border-b border-white/10">
                         Signed in as{" "}

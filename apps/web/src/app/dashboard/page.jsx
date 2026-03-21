@@ -206,9 +206,9 @@ export default function DashboardHome() {
   return (
     <div className="space-y-10">
       {/* Header */}
-      <section className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm p-6">
+      <section className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm p-4 sm:p-6">
         <div className="flex flex-col gap-2">
-          <h2 className="text-4xl font-bold text-slate-900 dark:text-white">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 dark:text-white break-words">
             {greeting}, {loading ? "..." : displayName}
           </h2>
           <p className="text-slate-600 dark:text-slate-400">
@@ -232,7 +232,7 @@ export default function DashboardHome() {
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
             {[1, 2, 3].map((i) => (
               <div key={i} className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 animate-pulse">
                 <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-16 mb-3" />
@@ -246,7 +246,7 @@ export default function DashboardHome() {
             No recent activity yet. Start a chat or upload notes to see smart &ldquo;Continue&rdquo; cards here.
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
             {continueCards.map((c) => (
               <Link
                 key={c.id}
@@ -275,7 +275,7 @@ export default function DashboardHome() {
       <section className="space-y-4">
         <h3 className="text-xl font-bold text-slate-900 dark:text-white">Your tools</h3>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
           <ToolCard title="Pomodoro" desc="Focus sessions + streaks" href="/dashboard" pill="Free: 3/day" icon={Timer} />
           <ToolCard
             title="Files"
@@ -309,7 +309,7 @@ export default function DashboardHome() {
       </section>
 
       {/* Soft "upgrade" area */}
-      <section className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-gradient-to-r from-indigo-50 to-slate-50 dark:from-indigo-950/50 dark:to-slate-800/50 p-6">
+      <section className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-gradient-to-r from-indigo-50 to-slate-50 dark:from-indigo-950/50 dark:to-slate-800/50 p-4 sm:p-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <div className="font-bold text-slate-900 dark:text-white">

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { FolderOpen, MessageSquare, Brain, Layers, ChevronRight } from "lucide-react";
+import { FolderOpen, MessageSquare, Brain, Layers, ChevronRight, Menu, X } from "lucide-react";
 
 import PomodoroSidebarCard from "../components/PomodoroSidebarCard";
 import { StudyAIPanelProvider, useStudyAIPanel } from "../components/StudyAIPanelProvider";
@@ -32,6 +32,11 @@ function DashboardLayoutInner({ children }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  // Close sidebar on mobile when navigating
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
+
   return (
     <div className="min-h-screen relative bg-gradient-to-br from-indigo-50 via-blue-50 to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       {/* Decorative blobs */}
@@ -39,8 +44,19 @@ function DashboardLayoutInner({ children }) {
       <div className="pointer-events-none absolute top-1/3 -right-24 h-96 w-96 rounded-full bg-blue-300/30 dark:bg-blue-900/20 blur-3xl" />
       <div className="pointer-events-none absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-purple-300/20 dark:bg-purple-900/15 blur-3xl" />
 
-      <div className="relative z-10 w-full max-w-none px-4 sm:px-6 lg:px-10 xl:px-14 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)] gap-6 w-full min-w-0">
+      <div className="relative z-10 w-full max-w-none px-3 sm:px-6 lg:px-10 xl:px-14 py-4 sm:py-6">
+        {/* Mobile sidebar toggle */}
+        <div className="lg:hidden mb-3">
+          <button
+            onClick={() => setSidebarOpen((v) => !v)}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-800/80 backdrop-blur border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 shadow-sm"
+          >
+            {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            <span className="text-sm font-medium">{sidebarOpen ? "Close menu" : "Menu"}</span>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)] gap-4 sm:gap-6 w-full min-w-0">
           {/* Sidebar */}
           <aside
             className={`${
@@ -97,9 +113,9 @@ function DashboardLayoutInner({ children }) {
           </aside>
 
           {/* Main content + AI panel row */}
-          <div className="flex gap-4 min-w-0 h-[calc(100vh-8rem)]">
+          <div className="flex gap-4 min-w-0 h-[calc(100vh-10rem)] sm:h-[calc(100vh-8rem)]">
             {/* Content area */}
-            <section className="min-w-0 flex-1 flex flex-col rounded-2xl bg-white/80 dark:bg-slate-800/80 backdrop-blur shadow-xl border border-slate-100 dark:border-slate-700 p-4 sm:p-6 transition-all duration-300">
+            <section className="min-w-0 flex-1 flex flex-col rounded-2xl bg-white/80 dark:bg-slate-800/80 backdrop-blur shadow-xl border border-slate-100 dark:border-slate-700 p-3 sm:p-6 transition-all duration-300">
               <div className="w-full max-w-none flex-1 min-h-0 overflow-y-auto">
                 {children}
               </div>

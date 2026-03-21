@@ -52,7 +52,7 @@ const HorizontalScroll = ({ cards }) => {
                 }}
             >
                 {cards.map((card, index) => (
-                    <div key={index} className="flex-none w-80 bg-blue-400 text-white p-6 rounded-lg shadow-lg snap-center hover:shadow-2xl hover:shadow-blue-500/25 
+                    <div key={index} className="flex-none w-64 sm:w-72 md:w-80 bg-blue-400 text-white p-4 sm:p-6 rounded-lg shadow-lg snap-center hover:shadow-2xl hover:shadow-blue-500/25
                             transform hover:-translate-y-1 hover:scale-[1.02]
                             transition-all duration-300 ease-out
                             cursor-pointer">
@@ -84,22 +84,22 @@ const HorizontalScroll = ({ cards }) => {
             </div>
 
             {/* Arrow Navigation */}
-            <button 
+            <button
                 onClick={goBackPrevious}
-                className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-50 transition-colors z-10"
+                className="hidden sm:block absolute -left-2 sm:left-0 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-1.5 sm:p-2 shadow-lg hover:bg-gray-50 transition-colors z-10"
                 aria-label="Previous slide"
             >
-                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
             </button>
 
-            <button 
+            <button
                 onClick={goForward}
-                className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-50 transition-colors z-10"
+                className="hidden sm:block absolute -right-2 sm:right-0 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-1.5 sm:p-2 shadow-lg hover:bg-gray-50 transition-colors z-10"
                 aria-label="Next slide"
             >
-                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
             </button>

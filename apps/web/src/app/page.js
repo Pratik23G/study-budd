@@ -73,7 +73,7 @@ export default async function Home() {
           {/* First typing text */}
           <div className="w-full flex justify-center px-2">
             <h1
-              className="animate-typing overflow-hidden whitespace-normal sm:whitespace-nowrap border-r-2 sm:border-r-4 border-r-black dark:border-r-white pr-1 sm:pr-2 text-sm sm:text-base md:text-lg lg:text-[19px] font-medium leading-relaxed"
+              className="animate-typing overflow-hidden whitespace-normal md:whitespace-nowrap border-r-0 md:border-r-4 border-r-black dark:border-r-white pr-0 md:pr-2 text-base sm:text-lg md:text-lg lg:text-[19px] font-medium leading-relaxed text-center md:text-left"
               style={typingStyle(line1, "0s")}
             >
               {line1}
@@ -83,7 +83,7 @@ export default async function Home() {
           {/* Second typing text */}
           <div className="w-full flex justify-center px-2">
             <h2
-              className="animate-typing overflow-hidden whitespace-normal sm:whitespace-nowrap border-r-2 sm:border-r-4 border-r-black dark:border-r-white pr-1 sm:pr-2 text-sm sm:text-base md:text-lg lg:text-[20px] font-medium leading-relaxed"
+              className="animate-typing overflow-hidden whitespace-normal md:whitespace-nowrap border-r-0 md:border-r-4 border-r-black dark:border-r-white pr-0 md:pr-2 text-base sm:text-lg md:text-lg lg:text-[20px] font-medium leading-relaxed text-center md:text-left"
               style={typingStyle(line2, "0.4s")}
             >
               {line2}
