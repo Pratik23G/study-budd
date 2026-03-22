@@ -1,8 +1,27 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Component, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { useStudyAIPanel } from "../app/components/StudyAIPanelProvider";
+
+/* Error boundary — if markdown rendering crashes, show plain text */
+class MarkdownErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <span style={{ whiteSpace: "pre-wrap" }}>{this.props.fallback}</span>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 /**
  * Inline AI chat panel that sits alongside the main content.
@@ -360,9 +379,11 @@ export default function StudyAIPanel({ accentColor = "#6366f1" }) {
                           ))}
                         </div>
                       ) : (
-                        <ReactMarkdown components={mdComponents}>
-                          {msg.content}
-                        </ReactMarkdown>
+                        <MarkdownErrorBoundary fallback={msg.content}>
+                          <ReactMarkdown components={mdComponents}>
+                            {msg.content}
+                          </ReactMarkdown>
+                        </MarkdownErrorBoundary>
                       )}
                     </div>
                   )}

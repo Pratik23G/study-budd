@@ -2,8 +2,6 @@
 
 import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import "highlight.js/styles/github.min.css";
-
 // Hooks
 import useAuth from "./hooks/useAuth";
 import useThreads from "./hooks/useThreads";
