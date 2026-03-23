@@ -2,6 +2,7 @@ import "./globals.css";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import { PomodoroProvider } from "./components/PomodoroProvider";
+import PomodoroWidget from "./components/PomodoroWidget";
 import { NotificationsProvider } from "./components/NotificationsContext";
 import ThemeProvider from "./components/ThemeProvider";
 
@@ -26,6 +27,7 @@ export default function RootLayout({ children }) {
             <PomodoroProvider>
               <Navbar />
               <div className="flex-1">{children}</div>
+              <PomodoroWidget />
               <Footer />
             </PomodoroProvider>
           </NotificationsProvider>

@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Timer, FolderOpen, MessageSquare, Brain, Layers } from "lucide-react";
 import { PROFILE_UPDATED_EVENT } from "../../lib/profile";
 import { createSupabaseBrowser } from "../../lib/supabase/client";
-import PomodoroSidebarCard from "../components/PomodoroSidebarCard";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -218,11 +217,6 @@ export default function DashboardHome() {
         </div>
       </section>
 
-      {/* Pomodoro Timer */}
-      <section id="pomodoro">
-        <PomodoroSidebarCard />
-      </section>
-
       {/* Continue Where You Left Off */}
       <section className="space-y-4">
         <div className="flex items-end justify-between gap-3">
@@ -282,7 +276,7 @@ export default function DashboardHome() {
         <h3 className="text-xl font-bold text-slate-900 dark:text-white">Your tools</h3>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-          <ToolCard title="Pomodoro" desc="Focus sessions + streaks" href="#pomodoro" pill="Free: 3/day" icon={Timer} />
+          <ToolCard title="Pomodoro" desc="Focus sessions + streaks" href="/dashboard" pill="Free: 3/day" icon={Timer} />
           <ToolCard
             title="Files"
             desc="Upload notes, prep sheets"

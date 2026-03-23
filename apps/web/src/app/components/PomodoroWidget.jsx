@@ -1,14 +1,22 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import PomodorTimer from "./PomodorTimer";
 import { usePomodoro } from "./PomodoroProvider";
 
 export default function PomodoroWidget() {
   const [open, setOpen] = useState(false);
   const { hydrated, mm, ss, pad2, modeLabel, isRunning, mode, start, pause } = usePomodoro();
+  const pathname = usePathname();
 
-  const label = hydrated ? modeLabel : "...";
+  // Hide on dashboard pages — the sidebar card handles it there
+  if (pathname?.startsWith("/dashboard")) return null;
+
+  // Prevent hydration mismatch
+  if (!hydrated) return null;
+
+  const label = modeLabel;
 
   const accentColor =
     mode === "focus"
