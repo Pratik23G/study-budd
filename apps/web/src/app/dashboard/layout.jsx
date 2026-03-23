@@ -55,7 +55,8 @@ function DashboardLayoutInner({ children }) {
               fixed inset-y-0 left-0 z-50 w-64 flex flex-col
               bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl shadow-2xl border-r border-slate-200 dark:border-slate-700
               transform transition-transform duration-300 ease-in-out
-              lg:static lg:z-auto lg:w-56 xl:w-60 lg:translate-x-0
+              lg:sticky lg:top-24 lg:self-start lg:z-auto lg:w-56 xl:w-60 lg:translate-x-0
+              lg:max-h-[calc(100vh-8rem)] lg:h-fit
               lg:rounded-2xl lg:border lg:shadow-xl lg:bg-white/80 lg:dark:bg-slate-800/80
               ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
             `}
@@ -73,8 +74,8 @@ function DashboardLayoutInner({ children }) {
               </button>
             </div>
 
-            {/* Nav links */}
-            <nav className="flex-1 px-3 py-3 lg:pt-4 space-y-1 overflow-y-auto">
+            {/* Nav links — compact, no flex-grow */}
+            <nav className="px-3 py-3 lg:pt-4 space-y-1 overflow-y-auto shrink-0">
               {NAV_LINKS.map(({ href, label, icon: Icon, exact }) => {
                 const active = exact ? pathname === href : pathname?.startsWith(href);
                 return (
@@ -83,7 +84,7 @@ function DashboardLayoutInner({ children }) {
                     href={href}
                     onClick={() => setSidebarOpen(false)}
                     className={`
-                      flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition
+                      flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition
                       ${active
                         ? "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-semibold"
                         : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-slate-200"
@@ -98,7 +99,7 @@ function DashboardLayoutInner({ children }) {
             </nav>
 
             {/* Pomodoro card pinned to bottom of sidebar */}
-            <div className="px-3 pb-3 lg:pb-4 mt-auto">
+            <div className="px-3 pb-3 lg:pb-4 mt-auto shrink-0">
               <PomodoroSidebarCard />
             </div>
           </aside>
