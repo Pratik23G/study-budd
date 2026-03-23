@@ -21,7 +21,23 @@ export default function PomodoroSidebarCard() {
   const [expanded, setExpanded] = useState(false);
   const [showEditTimes, setShowEditTimes] = useState(false);
 
-  const label = hydrated === false ? "..." : modeLabel;
+  const label = modeLabel;
+
+  // Prevent hydration mismatch — show skeleton until localStorage values are loaded
+  if (!hydrated) {
+    return (
+      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden shadow-sm">
+        <div className="flex items-center gap-3 px-3 py-3 sm:px-4 sm:py-3 animate-pulse">
+          <div className="w-16 h-16 sm:w-14 sm:h-14 rounded-full bg-slate-200 dark:bg-slate-700 shrink-0" />
+          <div className="flex-1 min-w-0 space-y-2">
+            <div className="h-2.5 bg-slate-200 dark:bg-slate-700 rounded w-16" />
+            <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-20" />
+          </div>
+          <div className="h-8 w-16 bg-slate-200 dark:bg-slate-700 rounded-lg shrink-0" />
+        </div>
+      </div>
+    );
+  }
 
   const accentColor =
     mode === "focus" ? "text-indigo-600 dark:text-indigo-400"
