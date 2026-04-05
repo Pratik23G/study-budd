@@ -144,7 +144,7 @@ class Settings(BaseSettings):
     )
 
     # Upload limits
-    max_upload_size_mb: int = 10
+    max_upload_size_mb: int = 50
 
     # Rate limiting
     rate_limit_chat_max: int = Field(
