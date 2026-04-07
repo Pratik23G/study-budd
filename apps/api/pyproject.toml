@@ -22,7 +22,7 @@ dependencies = [
     "PyJWT[crypto]>=2.9.0",
     "together>=1.0.0",
     "numpy>=1.26.0",
-    "pypdf>=5.0.0",
+    "pdfplumber>=0.11.9",
 ]
 
 [project.optional-dependencies]
