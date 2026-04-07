@@ -3,7 +3,7 @@
 import csv
 import io
 from typing import TYPE_CHECKING
-from pypdf import PdfReader
+import pdfplumber
 
 from app.core.supabase import download_file
 from app.documents.models import Document
@@ -31,15 +31,25 @@ def extract_text_from_document(document: Document) -> str:
 
     if document.file_type == "pdf":
         content = download_file(document.storage_path)
-        reader = PdfReader(io.BytesIO(content))
+        with pdfplumber.open(io.BytesIO(content)) as pdf:
 
-        pages: list[str] = []
-        for page in reader.pages:
-            text = page.extract_text()
-            if text:
-                pages.append(text.strip())
 
-        return "\n\n".join(pages).strip()
+            pages: list[str] = []
+            for page in pdf.pages:
+                tables = page.extract_tables()
+
+                if tables:
+                    for table in tables:
+                        headers = table[0]
+                        for i, row in enumerate(table[1:], start = 1):
+                            pairs = [f"{h} = {v}" for h, v in zip(headers, row) if v and v.strip()]
+                            pages.append(f"Row {i}: {','.join(pairs)}")
+                else:
+                    text = page.extract_text()
+                    if text:
+                        pages.append(text.strip())
+
+            return "\n\n".join(pages).strip()
 
     content = download_file(document.storage_path)
     raw = content.decode("utf-8-sig")
@@ -49,9 +59,24 @@ def extract_text_from_document(document: Document) -> str:
 
     if document.file_type == "csv":
         reader = csv.reader(io.StringIO(raw))
+        firstHeader = next(reader)
         parts: list[str] = []
-        for row in reader:
-            parts.extend(cell.strip() for cell in row if cell.strip())
-        return " ".join(parts).strip()
+
+        if not firstHeader:
+            return ""
+
+        for (row_number, row) in enumerate(reader, start = 1):
+            result = []
+            newReadList = zip(firstHeader, row)
+
+            for header, value in newReadList:
+                newEntry = header + "=" + value
+                if value.strip():
+                    result.append(newEntry)
+            
+            joined_string = ", ".join(result)
+            parts.append(f"Row {row_number}: {joined_string}")
+            
+        return "\n".join(parts)
 
     return ""
